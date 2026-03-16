@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Block Quest</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #10151c;
+      color: #fff;
+    }
+
+    body {
+      display: flex;
+      align-items: stretch;
+      justify-content: stretch;
+    }
+
+    #gameWrap {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background:
+        linear-gradient(to bottom, #7fd3ff 0%, #9be2ff 45%, #dff8ff 46%, #7ddf72 46%, #69c25f 100%);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+
+    .hud {
+      position: absolute;
+      left: 18px;
+      top: 18px;
+      width: min(360px, calc(100vw - 36px));
+      background: rgba(17, 24, 39, 0.82);
+      border: 3px solid rgba(255, 255, 255, 0.12);
+      border-radius: 14px;
+      padding: 14px;
+      backdrop-filter: blur(6px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+      z-index: 10;
+    }
+
+    .hud h1 {
+      margin: 0 0 10px 0;
+      font-size: 20px;
+      letter-spacing: 0.5px;
+    }
+
+    .hud p {
+      margin: 0 0 8px 0;
+      font-size: 14px;
+      line-height: 1.4;
+      color: #e8eef7;
+    }
+
+    .hud .small {
+      font-size: 12px;
+      color: #c3d1e4;
+    }
+
+    .questStatus {
+      margin-top: 10px;
+      padding: 10px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 10px;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .inventory {
+      position: absolute;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+      z-index: 10;
+      padding: 10px 14px;
+      background: rgba(17, 24, 39, 0.82);
+      border-radius: 14px;
+      border: 3px solid rgba(255,255,255,0.12);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+    }
+
+    .slot {
+      width: 58px;
+      height: 58px;
+      background: rgba(255,255,255,0.08);
+      border: 3px solid rgba(255,255,255,0.15);
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      font-size: 11px;
+      color: #dfe8f6;
+    }
+
+    .slot strong {
+      font-size: 22px;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .slot .count {
+      position: absolute;
+      right: 6px;
+      bottom: 4px;
+      font-size: 12px;
+      font-weight: bold;
+      color: #fff;
+    }
+
+    .centerMessage {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      min-width: min(560px, calc(100vw - 32px));
+      max-width: 90vw;
+      background: rgba(15, 23, 42, 0.92);
+      border: 4px solid rgba(255,255,255,0.14);
+      border-radius: 18px;
+      padding: 22px;
+      text-align: center;
+      z-index: 20;
+      display: none;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+
+    .centerMessage.show { display: block; }
+
+    .centerMessage h2 {
+      margin: 0 0 12px 0;
+      font-size: 28px;
+    }
+
+    .centerMessage p {
+      margin: 10px 0;
+      font-size: 16px;
+      line-height: 1.5;
+      color: #edf4ff;
+    }
+
+    .btnRow {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+
+    button {
+      border: none;
+      border-radius: 12px;
+      padding: 12px 18px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      background: linear-gradient(135deg, #57d163, #2ea043);
+      color: white;
+      box-shadow: 0 8px 18px rgba(46,160,67,0.35);
+    }
+
+    button.secondary {
+      background: linear-gradient(135deg, #4d7dff, #3562e2);
+      box-shadow: 0 8px 18px rgba(53,98,226,0.35);
+    }
+
+    .interactHint {
+      position: absolute;
+      right: 18px;
+      top: 18px;
+      max-width: 320px;
+      z-index: 10;
+      padding: 12px 14px;
+      background: rgba(17, 24, 39, 0.82);
+      border: 3px solid rgba(255,255,255,0.12);
+      border-radius: 14px;
+      font-size: 14px;
+      line-height: 1.45;
+      display: none;
+    }
+
+    .footerNote {
+      position: absolute;
+      right: 18px;
+      bottom: 18px;
+      z-index: 10;
+      background: rgba(17, 24, 39, 0.82);
+      border: 3px solid rgba(255,255,255,0.12);
+      border-radius: 14px;
+      padding: 10px 12px;
+      font-size: 12px;
+      color: #d5e0ef;
+    }
+
+    @media (max-width: 860px) {
+      .hud { width: calc(100vw - 24px); left: 12px; top: 12px; }
+      .interactHint { right: 12px; top: auto; bottom: 98px; max-width: calc(100vw - 24px); }
+      .footerNote { left: 12px; right: 12px; bottom: 12px; }
+      .inventory { bottom: 74px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="gameWrap">
+    <canvas id="gameCanvas"></canvas>
+
+    <div class="hud">
+      <h1>Block Quest</h1>
+      <p><strong>Déplacement :</strong> ZQSD / WASD ou flèches</p>
+      <p><strong>Interaction :</strong> E</p>
+      <p><strong>Objectif :</strong> retrouver les <strong>3 cristaux</strong> pour réparer le portail du village.</p>
+      <div class="questStatus" id="questStatus"></div>
+      <p class="small">Page unique <strong>index.html</strong>, prête pour un déploiement simple sur Vercel.</p>
+    </div>
+
+    <div class="interactHint" id="interactHint"></div>
+
+    <div class="inventory" id="inventory"></div>
+
+    <div class="centerMessage show" id="startModal">
+      <h2>Bienvenue dans Block Quest</h2>
+      <p>Tu incarnes un aventurier dans un univers <strong>inspiré de Minecraft</strong>. Explore la map, parle au villageois, récupère les cristaux perdus et réactive le portail.</p>
+      <p>La quête est simple mais déjà jouable : déplacement, collecte, interaction, progression, écran de victoire.</p>
+      <div class="btnRow">
+        <button id="startBtn">Commencer l’aventure</button>
+      </div>
+    </div>
+
+    <div class="centerMessage" id="winModal">
+      <h2>Quête terminée</h2>
+      <p>Bravo, tu as récupéré tous les cristaux et réactivé le portail du village.</p>
+      <p>Cette base peut ensuite être enrichie avec : ennemis, crafting, PNJ supplémentaires, collisions plus complexes, sons, sauvegarde et plusieurs quêtes.</p>
+      <div class="btnRow">
+        <button class="secondary" id="restartBtn">Rejouer</button>
+      </div>
+    </div>
+
+    <div class="footerNote">
+      Astuce : approche-toi d’un coffre, du villageois ou du portail puis appuie sur <strong>E</strong>.
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const questStatusEl = document.getElementById('questStatus');
+    const inventoryEl = document.getElementById('inventory');
+    const interactHintEl = document.getElementById('interactHint');
+    const startModal = document.getElementById('startModal');
+    const winModal = document.getElementById('winModal');
+    const startBtn = document.getElementById('startBtn');
+    const restartBtn = document.getElementById('restartBtn');
+
+    let W = 0;
+    let H = 0;
+    const TILE = 48;
+    const WORLD_COLS = 34;
+    const WORLD_ROWS = 22;
+    const WORLD_W = WORLD_COLS * TILE;
+    const WORLD_H = WORLD_ROWS * TILE;
+
+    let running = false;
+    const keys = {};
+
+    const state = {
+      questStarted: false,
+      crystalsFound: 0,
+      questCompleted: false,
+      message: "Parle au villageois près du portail pour lancer ta mission.",
+      inventory: {
+        crystal: 0,
+        wood: 0,
+        food: 0
+      }
+    };
+
+    const player = {
+      x: 5 * TILE,
+      y: 8 * TILE,
+      w: 30,
+      h: 38,
+      speed: 3.2,
+      dir: 'down'
+    };
+
+    const npc = {
+      x: 8 * TILE,
+      y: 8 * TILE,
+      w: 34,
+      h: 38,
+      name: 'Eldon'
+    };
+
+    const portal = {
+      x: 10 * TILE,
+      y: 6 * TILE,
+      w: TILE * 2,
+      h: TILE * 3,
+      active: false
+    };
+
+    const chests = [
+      { x: 23 * TILE, y: 4 * TILE, w: 38, h: 30, opened: false, reward: 'crystal', id: 1 },
+      { x: 28 * TILE, y: 16 * TILE, w: 38, h: 30, opened: false, reward: 'crystal', id: 2 },
+      { x: 4 * TILE, y: 18 * TILE, w: 38, h: 30, opened: false, reward: 'crystal', id: 3 }
+    ];
+
+    const decorations = [];
+    const walls = [];
+
+    function addWall(col, row, cols = 1, rows = 1) {
+      walls.push({ x: col * TILE, y: row * TILE, w: cols * TILE, h: rows * TILE });
+    }
+
+    function buildWorld() {
+      walls.length = 0;
+      decorations.length = 0;
+
+      for (let c = 0; c < WORLD_COLS; c++) {
+        addWall(c, 0);
+        addWall(c, WORLD_ROWS - 1);
+      }
+      for (let r = 0; r < WORLD_ROWS; r++) {
+        addWall(0, r);
+        addWall(WORLD_COLS - 1, r);
+      }
+
+      addWall(14, 3, 1, 7);
+      addWall(15, 9, 4, 1);
+      addWall(21, 12, 1, 6);
+      addWall(8, 14, 7, 1);
+      addWall(18, 4, 5, 1);
+      addWall(4, 5, 1, 4);
+
+      const treePositions = [
+        [3,3],[6,3],[11,4],[17,2],[24,3],[30,4],[26,8],[31,10],[3,13],[5,16],[10,18],[16,17],[24,18],[29,18]
+      ];
+      treePositions.forEach(([c, r]) => {
+        decorations.push({ type: 'tree', x: c * TILE, y: r * TILE });
+        addWall(c, r, 1, 1);
+      });
+
+      const waterZones = [
+        { c: 24, r: 12, cols: 5, rows: 3 },
+        { c: 2, r: 9, cols: 2, rows: 3 }
+      ];
+      waterZones.forEach(z => decorations.push({ type: 'water', x: z.c * TILE, y: z.r * TILE, cols: z.cols, rows: z.rows }));
+
+      const flowers = [
+        [7,10],[12,11],[19,15],[27,6],[9,19],[25,9],[22,19],[30,15],[13,6]
+      ];
+      flowers.forEach(([c,r]) => decorations.push({ type: 'flower', x: c*TILE, y: r*TILE }));
+    }
+
+    buildWorld();
+
+    function resize() {
+      W = window.innerWidth;
+      H = window.innerHeight;
+      canvas.width = W;
+      canvas.height = H;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function intersects(a, b) {
+      return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+    }
+
+    function near(a, b, distance = 64) {
+      const ax = a.x + a.w / 2;
+      const ay = a.y + a.h / 2;
+      const bx = b.x + b.w / 2;
+      const by = b.y + b.h / 2;
+      return Math.hypot(ax - bx, ay - by) <= distance;
+    }
+
+    function updateQuestStatus() {
+      let text = `<strong>État de la quête :</strong><br>${state.message}`;
+      text += `<br><br><strong>Cristaux :</strong> ${state.crystalsFound}/3`;
+      if (portal.active) {
+        text += `<br><strong>Portail :</strong> réactivé`;
+      }
+      questStatusEl.innerHTML = text;
+    }
+
+    function renderInventory() {
+      const items = [
+        { key: 'crystal', icon: '◆', label: 'Cristal' },
+        { key: 'wood', icon: '▤', label: 'Bois' },
+        { key: 'food', icon: '✦', label: 'Food' }
+      ];
+      inventoryEl.innerHTML = items.map(item => `
+        <div class="slot">
+          <strong>${item.icon}</strong>
+          <span>${item.label}</span>
+          <span class="count">${state.inventory[item.key] || 0}</span>
+        </div>
+      `).join('');
+    }
+
+    function resetGame() {
+      player.x = 5 * TILE;
+      player.y = 8 * TILE;
+      player.dir = 'down';
+      state.questStarted = false;
+      state.crystalsFound = 0;
+      state.questCompleted = false;
+      state.message = 'Parle au villageois près du portail pour lancer ta mission.';
+      state.inventory = { crystal: 0, wood: 0, food: 0 };
+      portal.active = false;
+      chests.forEach(ch => ch.opened = false);
+      updateQuestStatus();
+      renderInventory();
+      winModal.classList.remove('show');
+      startModal.classList.add('show');
+      interactHintEl.style.display = 'none';
+      running = false;
+    }
+
+    function handleInteraction() {
+      if (near(player, npc, 76)) {
+        if (!state.questStarted) {
+          state.questStarted = true;
+          state.message = 'Eldon t’envoie chercher 3 cristaux cachés dans des coffres autour du monde.';
+        } else if (state.crystalsFound < 3) {
+          state.message = `Eldon : il manque encore ${3 - state.crystalsFound} cristal${3 - state.crystalsFound > 1 ? 'ux' : ''}. Continue l’exploration.`;
+        } else if (!portal.active) {
+          state.message = 'Eldon : parfait. Va au portail et active-le.';
+        }
+        updateQuestStatus();
+        return;
+      }
+
+      for (const chest of chests) {
+        if (near(player, chest, 62)) {
+          if (!state.questStarted) {
+            state.message = 'Tu devrais d’abord parler à Eldon pour comprendre la mission.';
+            updateQuestStatus();
+            return;
+          }
+          if (!chest.opened) {
+            chest.opened = true;
+            if (chest.reward === 'crystal') {
+              state.crystalsFound += 1;
+              state.inventory.crystal += 1;
+            }
+            state.message = `Coffre ${chest.id} ouvert : tu as trouvé un cristal.`;
+            if (state.crystalsFound === 3) {
+              state.message += ' Retourne parler à Eldon puis active le portail.';
+            }
+          } else {
+            state.message = `Coffre ${chest.id} déjà ouvert.`;
+          }
+          updateQuestStatus();
+          renderInventory();
+          return;
+        }
+      }
+
+      if (near(player, portal, 90)) {
+        if (state.crystalsFound >= 3) {
+          portal.active = true;
+          state.questCompleted = true;
+          state.message = 'Le portail est réactivé. Le village est sauvé.';
+          updateQuestStatus();
+          winModal.classList.add('show');
+          running = false;
+        } else {
+          state.message = 'Le portail manque d’énergie. Il te faut 3 cristaux.';
+          updateQuestStatus();
+        }
+      }
+    }
+
+    function blocked(nextRect) {
+      if (nextRect.x < TILE || nextRect.y < TILE || nextRect.x + nextRect.w > WORLD_W - TILE || nextRect.y + nextRect.h > WORLD_H - TILE) {
+        return true;
+      }
+
+      for (const wall of walls) {
+        if (intersects(nextRect, wall)) return true;
+      }
+
+      const npcRect = { x: npc.x, y: npc.y, w: npc.w, h: npc.h };
+      if (intersects(nextRect, npcRect)) return true;
+
+      return false;
+    }
+
+    function updatePlayer() {
+      let dx = 0;
+      let dy = 0;
+      if (keys['arrowup'] || keys['z'] || keys['w']) dy -= player.speed;
+      if (keys['arrowdown'] || keys['s']) dy += player.speed;
+      if (keys['arrowleft'] || keys['q'] || keys['a']) dx -= player.speed;
+      if (keys['arrowright'] || keys['d']) dx += player.speed;
+
+      if (dx !== 0 || dy !== 0) {
+        const length = Math.hypot(dx, dy) || 1;
+        dx = dx / length * player.speed;
+        dy = dy / length * player.speed;
+
+        if (Math.abs(dx) > Math.abs(dy)) player.dir = dx > 0 ? 'right' : 'left';
+        else player.dir = dy > 0 ? 'down' : 'up';
+      }
+
+      const nextXRect = { x: player.x + dx, y: player.y, w: player.w, h: player.h };
+      if (!blocked(nextXRect)) player.x += dx;
+
+      const nextYRect = { x: player.x, y: player.y + dy, w: player.w, h: player.h };
+      if (!blocked(nextYRect)) player.y += dy;
+
+      player.x = clamp(player.x, TILE, WORLD_W - TILE - player.w);
+      player.y = clamp(player.y, TILE, WORLD_H - TILE - player.h);
+    }
+
+    function getCamera() {
+      const targetX = player.x + player.w / 2 - W / 2;
+      const targetY = player.y + player.h / 2 - H / 2;
+      return {
+        x: clamp(targetX, 0, Math.max(0, WORLD_W - W)),
+        y: clamp(targetY, 0, Math.max(0, WORLD_H - H))
+      };
+    }
+
+    function drawTileRect(x, y, w, h, color) {
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, w, h);
+      ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+      ctx.strokeRect(x, y, w, h);
+    }
+
+    function drawGround(cam) {
+      for (let row = 0; row < WORLD_ROWS; row++) {
+        for (let col = 0; col < WORLD_COLS; col++) {
+          const x = col * TILE - cam.x;
+          const y = row * TILE - cam.y;
+          ctx.fillStyle = (row + col) % 2 === 0 ? '#6fbe63' : '#68b75d';
+          ctx.fillRect(x, y, TILE, TILE);
+          ctx.fillStyle = '#9f7448';
+          ctx.fillRect(x, y + TILE - 8, TILE, 8);
+          ctx.strokeStyle = 'rgba(0,0,0,0.05)';
+          ctx.strokeRect(x, y, TILE, TILE);
+        }
+      }
+    }
+
+    function drawWater(cam, zone) {
+      for (let r = 0; r < zone.rows; r++) {
+        for (let c = 0; c < zone.cols; c++) {
+          const x = zone.x + c * TILE - cam.x;
+          const y = zone.y + r * TILE - cam.y;
+          drawTileRect(x, y, TILE, TILE, '#49a6ff');
+          ctx.fillStyle = 'rgba(255,255,255,0.18)';
+          ctx.fillRect(x + 6, y + 8, TILE - 12, 6);
+        }
+      }
+    }
+
+    function drawTree(cam, x, y) {
+      const sx = x - cam.x;
+      const sy = y - cam.y;
+      ctx.fillStyle = '#7b4d25';
+      ctx.fillRect(sx + 18, sy + 22, 12, 22);
+      ctx.fillStyle = '#2f8f3f';
+      ctx.fillRect(sx + 6, sy + 4, 36, 24);
+      ctx.fillRect(sx + 10, sy, 28, 20);
+      ctx.fillStyle = 'rgba(255,255,255,0.08)';
+      ctx.fillRect(sx + 10, sy + 4, 10, 4);
+    }
+
+    function drawFlower(cam, x, y) {
+      const sx = x - cam.x;
+      const sy = y - cam.y;
+      ctx.fillStyle = '#2a8f3e';
+      ctx.fillRect(sx + 22, sy + 20, 4, 18);
+      ctx.fillStyle = '#ff5fa8';
+      ctx.fillRect(sx + 16, sy + 10, 16, 10);
+      ctx.fillStyle = '#ffd34f';
+      ctx.fillRect(sx + 20, sy + 12, 8, 6);
+    }
+
+    function drawWalls(cam) {
+      for (const wall of walls) {
+        const x = wall.x - cam.x;
+        const y = wall.y - cam.y;
+        ctx.fillStyle = '#9b9b9b';
+        ctx.fillRect(x, y, wall.w, wall.h);
+        ctx.fillStyle = '#b9b9b9';
+        ctx.fillRect(x, y, wall.w, 10);
+        ctx.fillStyle = '#6a6a6a';
+        ctx.fillRect(x, y + wall.h - 8, wall.w, 8);
+        ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+        ctx.strokeRect(x, y, wall.w, wall.h);
+      }
+    }
+
+    function drawPortal(cam) {
+      const x = portal.x - cam.x;
+      const y = portal.y - cam.y;
+      ctx.fillStyle = '#5f3a1f';
+      ctx.fillRect(x, y, portal.w, portal.h);
+      ctx.clearRect(x + 12, y + 12, portal.w - 24, portal.h - 24);
+
+      if (portal.active) {
+        ctx.fillStyle = '#7d5cff';
+        ctx.fillRect(x + 12, y + 12, portal.w - 24, portal.h - 24);
+        ctx.fillStyle = 'rgba(255,255,255,0.25)';
+        ctx.fillRect(x + 18, y + 20, portal.w - 36, 10);
+      } else {
+        ctx.fillStyle = '#1d2231';
+        ctx.fillRect(x + 12, y + 12, portal.w - 24, portal.h - 24);
+      }
+    }
+
+    function drawChest(cam, chest) {
+      const x = chest.x - cam.x;
+      const y = chest.y - cam.y;
+      ctx.fillStyle = chest.opened ? '#8e6b46' : '#b78148';
+      ctx.fillRect(x, y, chest.w, chest.h);
+      ctx.fillStyle = '#5c3a1b';
+      ctx.fillRect(x, y + 12, chest.w, 4);
+      ctx.fillStyle = '#f4d35f';
+      ctx.fillRect(x + chest.w / 2 - 4, y + 10, 8, 8);
+      if (chest.opened) {
+        ctx.fillStyle = 'rgba(255,255,255,0.15)';
+        ctx.fillRect(x, y - 6, chest.w, 6);
+      }
+    }
+
+    function drawNPC(cam) {
+      const x = npc.x - cam.x;
+      const y = npc.y - cam.y;
+      ctx.fillStyle = '#68462b';
+      ctx.fillRect(x + 8, y + 26, 18, 12);
+      ctx.fillStyle = '#d6a77a';
+      ctx.fillRect(x + 6, y + 6, 22, 20);
+      ctx.fillStyle = '#4f7bff';
+      ctx.fillRect(x + 6, y + 26, 22, 10);
+      ctx.fillStyle = '#fff';
+      ctx.font = '12px Arial';
+      ctx.fillText(npc.name, x - 2, y - 8);
+    }
+
+    function drawPlayer(cam) {
+      const x = player.x - cam.x;
+      const y = player.y - cam.y;
+      ctx.fillStyle = '#5a3318';
+      ctx.fillRect(x + 8, y + 26, 14, 12);
+      ctx.fillStyle = '#f0c59a';
+      ctx.fillRect(x + 6, y + 4, 18, 18);
+      ctx.fillStyle = '#36b0ff';
+      ctx.fillRect(x + 4, y + 22, 22, 10);
+      ctx.fillStyle = '#1c3d7a';
+      ctx.fillRect(x + 4, y + 32, 22, 6);
+
+      ctx.fillStyle = '#222';
+      if (player.dir === 'left') {
+        ctx.fillRect(x + 8, y + 10, 2, 2);
+      } else if (player.dir === 'right') {
+        ctx.fillRect(x + 18, y + 10, 2, 2);
+      } else {
+        ctx.fillRect(x + 10, y + 10, 2, 2);
+        ctx.fillRect(x + 16, y + 10, 2, 2);
+      }
+    }
+
+    function drawShadow(cam, entity) {
+      const x = entity.x - cam.x;
+      const y = entity.y - cam.y;
+      ctx.fillStyle = 'rgba(0,0,0,0.18)';
+      ctx.fillRect(x + 4, y + entity.h - 4, entity.w - 8, 6);
+    }
+
+    function updateHint() {
+      let hint = '';
+      if (near(player, npc, 76)) {
+        hint = '<strong>E</strong> pour parler à Eldon';
+      } else {
+        const unopenedNearby = chests.find(ch => near(player, ch, 62));
+        if (unopenedNearby) {
+          hint = `<strong>E</strong> pour ouvrir le coffre ${unopenedNearby.id}`;
+        } else if (near(player, portal, 90)) {
+          hint = '<strong>E</strong> pour activer le portail';
+        }
+      }
+
+      if (hint) {
+        interactHintEl.innerHTML = hint;
+        interactHintEl.style.display = 'block';
+      } else {
+        interactHintEl.style.display = 'none';
+      }
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, W, H);
+      const cam = getCamera();
+
+      drawGround(cam);
+
+      for (const deco of decorations) {
+        if (deco.type === 'water') drawWater(cam, deco);
+      }
+      for (const deco of decorations) {
+        if (deco.type === 'flower') drawFlower(cam, deco.x, deco.y);
+      }
+
+      drawPortal(cam);
+      drawWalls(cam);
+
+      for (const chest of chests) drawChest(cam, chest);
+      for (const deco of decorations) {
+        if (deco.type === 'tree') drawTree(cam, deco.x, deco.y);
+      }
+
+      drawShadow(cam, npc);
+      drawShadow(cam, player);
+      drawNPC(cam);
+      drawPlayer(cam);
+
+      updateHint();
+    }
+
+    function loop() {
+      if (running) updatePlayer();
+      render();
+      requestAnimationFrame(loop);
+    }
+
+    window.addEventListener('keydown', (e) => {
+      keys[e.key.toLowerCase()] = true;
+      if (e.key.toLowerCase() === 'e' && running) {
+        handleInteraction();
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      keys[e.key.toLowerCase()] = false;
+    });
+
+    startBtn.addEventListener('click', () => {
+      startModal.classList.remove('show');
+      running = true;
+      updateQuestStatus();
+      renderInventory();
+    });
+
+    restartBtn.addEventListener('click', resetGame);
+
+    updateQuestStatus();
+    renderInventory();
+    loop();
+  </script>
+</body>
+</html>
