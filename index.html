@@ -281,7 +281,8 @@
       <h1>Block Builder 3D</h1>
       <p><strong>Desktop :</strong> ZQSD / WASD, E pour interagir, <strong>espace</strong> pour sauter, <strong>clic</strong> pour poser un bloc après la quête.</p>
       <p><strong>Mobile :</strong> joystick à gauche, <strong>E</strong> pour interagir, <strong>↑</strong> pour sauter, <strong>+</strong> pour poser un bloc.</p>
-      <p><strong>Astuce :</strong> après les 3 coffres, vise le sol ou le bord d’un bloc puis pose un bloc pour <strong>agrandir la zone</strong>. Ensuite saute dessus pour monter.</p>
+      <p><strong>Vues :</strong> touche <strong>V</strong> sur ordinateur pour changer de caméra. Après la quête, tu peux passer en <strong>vue à la première personne</strong>.</p>
+      <p><strong>Astuce :</strong> après les 3 coffres, pose d’abord des blocs un peu devant toi pour agrandir la zone, puis saute dessus.</p>
       <div class="quest" id="questText"></div>
       <div class="buildInfo" id="buildInfo"></div>
     </div>
@@ -615,15 +616,17 @@
       pitch: 0.45,
       yawOffset: 0,
       cameraDistance: 9,
-      supportTop: 0
+      supportTop: 0,
+      cameraMode: 'third'
     };
 
     function updateQuest() {
       const phase = state.buildModeUnlocked ? 'Construction débloquée' : 'Quête de départ';
-      questText.innerHTML = `<strong>${phase} :</strong> ${state.message}<br><br><strong>Cristaux :</strong> ${state.crystalsFound}/3`;
+      const vue = playerState.cameraMode === 'first' ? 'première personne' : 'troisième personne';
+      questText.innerHTML = `<strong>${phase} :</strong> ${state.message}<br><br><strong>Cristaux :</strong> ${state.crystalsFound}/3<br><strong>Vue :</strong> ${vue}`;
       if (state.buildModeUnlocked) {
         buildInfo.style.display = 'block';
-        buildInfo.innerHTML = `<strong>Mode construction :</strong> bloc sélectionné <strong>${blockDefs[state.selectedBlock].label}</strong>.<br><strong>Comment agrandir le terrain :</strong> vise le bord du sol ou d’un bloc, puis pose un bloc pour créer une extension.<br><strong>Comment monter dessus :</strong> rapproche-toi puis appuie sur <strong>espace</strong> sur ordinateur ou <strong>↑</strong> sur mobile.`;
+        buildInfo.innerHTML = `<strong>Mode construction :</strong> bloc sélectionné <strong>${blockDefs[state.selectedBlock].label}</strong>.<br><strong>Agrandir le terrain :</strong> vise un peu devant toi puis pose un bloc pour créer une extension.<br><strong>Monter dessus :</strong> rapproche-toi puis appuie sur <strong>espace</strong> sur ordinateur ou <strong>↑</strong> sur mobile.<br><strong>Changer de vue :</strong> touche <strong>V</strong> sur ordinateur.`;
         crosshair.style.display = 'block';
       } else {
         buildInfo.style.display = 'none';
@@ -828,6 +831,15 @@
     }
 
     function updateCamera(dt) {
+      const lookTarget = new THREE.Vector3(player.position.x, player.position.y + 2.6, player.position.z);
+      if (playerState.cameraMode === 'first') {
+        const eye = new THREE.Vector3(player.position.x, player.position.y + 3.5, player.position.z);
+        const dir = new THREE.Vector3(Math.sin(player.rotation.y), 0, Math.cos(player.rotation.y));
+        const front = eye.clone().add(dir.multiplyScalar(8));
+        camera.position.lerp(eye, 1 - Math.pow(0.001, dt));
+        camera.lookAt(front);
+        return;
+      }
       const dir = new THREE.Vector3(Math.sin(player.rotation.y), 0, Math.cos(player.rotation.y));
       const desired = new THREE.Vector3(
         player.position.x - dir.x * playerState.cameraDistance,
@@ -835,7 +847,7 @@
         player.position.z - dir.z * playerState.cameraDistance
       );
       camera.position.lerp(desired, 1 - Math.pow(0.001, dt));
-      camera.lookAt(new THREE.Vector3(player.position.x, player.position.y + 2.6, player.position.z));
+      camera.lookAt(lookTarget);
     }
 
     function animateFx(dt) {
@@ -856,6 +868,15 @@
     function getPlacementTarget() {
       if (!state.buildModeUnlocked) return null;
 
+      const dir = new THREE.Vector3(Math.sin(player.rotation.y), 0, Math.cos(player.rotation.y)).normalize();
+      const baseAhead = new THREE.Vector3(
+        player.position.x + dir.x * 3,
+        1,
+        player.position.z + dir.z * 3
+      );
+      baseAhead.x = Math.round(baseAhead.x / tileSize) * tileSize;
+      baseAhead.z = Math.round(baseAhead.z / tileSize) * tileSize;
+
       const origin = camera.position.clone();
       const target = new THREE.Vector3(player.position.x, player.position.y + 2.4, player.position.z)
         .sub(camera.position)
@@ -864,11 +885,7 @@
 
       const intersects = raycaster.intersectObjects(buildableBlocks, false);
       if (!intersects.length) {
-        const farPoint = origin.clone().add(target.clone().multiplyScalar(12));
-        farPoint.x = Math.round(farPoint.x / tileSize) * tileSize;
-        farPoint.z = Math.round(farPoint.z / tileSize) * tileSize;
-        farPoint.y = 1;
-        return farPoint;
+        return baseAhead;
       }
 
       const hit = intersects[0];
@@ -900,11 +917,11 @@
       const k = keyFor(pos.x, pos.y, pos.z);
       if (blockMap.has(k)) return;
       const blockTop = pos.y + tileSize / 2;
-      const tooCloseX = Math.abs(pos.x - player.position.x) < 1.25;
-      const tooCloseZ = Math.abs(pos.z - player.position.z) < 1.25;
-      const tooCloseY = Math.abs(blockTop - player.position.y) < playerState.height;
+      const tooCloseX = Math.abs(pos.x - player.position.x) < 0.75;
+      const tooCloseZ = Math.abs(pos.z - player.position.z) < 0.75;
+      const tooCloseY = Math.abs(blockTop - player.position.y) < (playerState.height - 0.8);
       if (tooCloseX && tooCloseZ && tooCloseY) {
-        state.message = 'Tu es trop près pour poser ce bloc ici.';
+        state.message = 'Recule légèrement avant de poser un bloc juste devant toi.';
         updateQuest();
         return;
       }
@@ -954,6 +971,10 @@
       setKey(e.code, true);
       if (e.code === 'KeyE' && state.running) interact();
       if (e.code === 'KeyF' && state.running) placeBlock();
+      if (e.code === 'KeyV') {
+        playerState.cameraMode = playerState.cameraMode === 'third' ? 'first' : 'third';
+        updateQuest();
+      }
       const keyMap = { Digit1: 'grass', Digit2: 'dirt', Digit3: 'stone', Digit4: 'woodBlock' };
       if (keyMap[e.code]) { state.selectedBlock = keyMap[e.code]; updateHotbar(); updateQuest(); }
     });
