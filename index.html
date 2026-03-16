@@ -52,6 +52,8 @@
       backdrop-filter: blur(6px);
       box-shadow: 0 10px 25px rgba(0,0,0,0.25);
       z-index: 10;
+      max-height: min(46vh, 320px);
+      overflow: auto;
     }
 
     .hud h1 {
@@ -211,10 +213,58 @@
     }
 
     @media (max-width: 860px) {
-      .hud { width: calc(100vw - 24px); left: 12px; top: 12px; }
-      .interactHint { right: 12px; top: auto; bottom: 160px; max-width: calc(100vw - 24px); }
-      .footerNote { left: 12px; right: 12px; bottom: 12px; }
-      .inventory { bottom: 138px; }
+      .hud {
+        width: calc(100vw - 24px);
+        left: 12px;
+        top: 12px;
+        padding: 10px 12px;
+        max-height: 124px;
+        overflow: auto;
+      }
+      .hud h1 {
+        font-size: 16px;
+        margin-bottom: 6px;
+      }
+      .hud p {
+        font-size: 12px;
+        margin-bottom: 4px;
+      }
+      .questStatus {
+        margin-top: 6px;
+        padding: 8px;
+        font-size: 12px;
+      }
+      .interactHint {
+        right: 12px;
+        top: auto;
+        bottom: 146px;
+        max-width: calc(100vw - 24px);
+        font-size: 12px;
+        padding: 8px 10px;
+      }
+      .footerNote {
+        display: none;
+      }
+      .inventory {
+        left: auto;
+        right: 12px;
+        bottom: 18px;
+        transform: none;
+        gap: 6px;
+        padding: 8px;
+      }
+      .slot {
+        width: 46px;
+        height: 46px;
+        border-radius: 8px;
+      }
+      .slot strong {
+        font-size: 16px;
+        margin-bottom: 2px;
+      }
+      .slot span {
+        font-size: 9px;
+      }
     }
 
     .mc-btn, .mc-action {
@@ -289,16 +339,14 @@
     </div>
 
     <div id="mobileControls" style="position:absolute; inset:0; pointer-events:none; z-index:12; display:none;">
-      <div style="position:absolute; left:14px; bottom:14px; width:170px; height:170px; pointer-events:none;">
-        <button class="mc-btn" id="btnUp" style="left:58px; top:0;">▲</button>
-        <button class="mc-btn" id="btnLeft" style="left:0; top:58px;">◀</button>
-        <button class="mc-btn" id="btnDown" style="left:58px; top:116px;">▼</button>
-        <button class="mc-btn" id="btnRight" style="left:116px; top:58px;">▶</button>
+      <div id="joystickBase" style="position:absolute; left:16px; bottom:20px; width:128px; height:128px; border-radius:50%; background:rgba(17,24,39,0.32); border:2px solid rgba(255,255,255,0.12); box-shadow: inset 0 0 20px rgba(0,0,0,0.18); pointer-events:auto; touch-action:none; user-select:none; -webkit-user-select:none;">
+        <div id="joystickKnob" style="position:absolute; left:34px; top:34px; width:60px; height:60px; border-radius:50%; background:rgba(17,24,39,0.88); border:2px solid rgba(255,255,255,0.16); box-shadow:0 10px 20px rgba(0,0,0,0.28);"></div>
       </div>
-      <div style="position:absolute; right:18px; bottom:24px; pointer-events:none;">
+      <div style="position:absolute; right:18px; bottom:96px; pointer-events:none;">
         <button class="mc-action" id="btnAction">E</button>
       </div>
     </div>
+  </div>
   </div>
 
   <script>
@@ -312,10 +360,8 @@
     const startBtn = document.getElementById('startBtn');
     const restartBtn = document.getElementById('restartBtn');
     const mobileControls = document.getElementById('mobileControls');
-    const btnUp = document.getElementById('btnUp');
-    const btnDown = document.getElementById('btnDown');
-    const btnLeft = document.getElementById('btnLeft');
-    const btnRight = document.getElementById('btnRight');
+    const joystickBase = document.getElementById('joystickBase');
+    const joystickKnob = document.getElementById('joystickKnob');
     const btnAction = document.getElementById('btnAction');
 
     let W = 0;
@@ -329,6 +375,8 @@
     let running = false;
     const keys = {};
     const isTouchDevice = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+    let joystickActive = false;
+    let joystickVector = { x: 0, y: 0 };
 
     const state = {
       questStarted: false,
@@ -568,6 +616,11 @@
       if (keys['arrowdown'] || keys['s']) dy += player.speed;
       if (keys['arrowleft'] || keys['q'] || keys['a']) dx -= player.speed;
       if (keys['arrowright'] || keys['d']) dx += player.speed;
+
+      if (isTouchDevice && joystickActive) {
+        dx += joystickVector.x * player.speed;
+        dy += joystickVector.y * player.speed;
+      }
 
       if (dx !== 0 || dy !== 0) {
         const length = Math.hypot(dx, dy) || 1;
@@ -822,34 +875,77 @@
 
     restartBtn.addEventListener('click', resetGame);
 
-    function bindHoldButton(button, keyName) {
-      const start = (e) => {
-        e.preventDefault();
-        keys[keyName] = true;
-      };
-      const end = (e) => {
-        e.preventDefault();
-        keys[keyName] = false;
-      };
-      button.addEventListener('touchstart', start, { passive: false });
-      button.addEventListener('touchend', end, { passive: false });
-      button.addEventListener('touchcancel', end, { passive: false });
-      button.addEventListener('mousedown', start);
-      button.addEventListener('mouseup', end);
-      button.addEventListener('mouseleave', end);
-    }
-
-    bindHoldButton(btnUp, 'arrowup');
-    bindHoldButton(btnDown, 'arrowdown');
-    bindHoldButton(btnLeft, 'arrowleft');
-    bindHoldButton(btnRight, 'arrowright');
-
+    
     function triggerAction(e) {
       e.preventDefault();
       if (running) handleInteraction();
     }
     btnAction.addEventListener('touchstart', triggerAction, { passive: false });
     btnAction.addEventListener('click', triggerAction);
+
+    function updateJoystick(clientX, clientY) {
+      const rect = joystickBase.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      let dx = clientX - centerX;
+      let dy = clientY - centerY;
+      const maxDist = 34;
+      const dist = Math.hypot(dx, dy);
+      if (dist > maxDist) {
+        dx = (dx / dist) * maxDist;
+        dy = (dy / dist) * maxDist;
+      }
+      joystickVector.x = dx / maxDist;
+      joystickVector.y = dy / maxDist;
+      joystickKnob.style.left = `${34 + dx}px`;
+      joystickKnob.style.top = `${34 + dy}px`;
+    }
+
+    function resetJoystick() {
+      joystickActive = false;
+      joystickVector = { x: 0, y: 0 };
+      joystickKnob.style.left = '34px';
+      joystickKnob.style.top = '34px';
+    }
+
+    joystickBase.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      joystickActive = true;
+      const t = e.touches[0];
+      updateJoystick(t.clientX, t.clientY);
+    }, { passive: false });
+
+    joystickBase.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      if (!joystickActive) return;
+      const t = e.touches[0];
+      updateJoystick(t.clientX, t.clientY);
+    }, { passive: false });
+
+    joystickBase.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      resetJoystick();
+    }, { passive: false });
+
+    joystickBase.addEventListener('touchcancel', (e) => {
+      e.preventDefault();
+      resetJoystick();
+    }, { passive: false });
+
+    joystickBase.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      joystickActive = true;
+      updateJoystick(e.clientX, e.clientY);
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!joystickActive) return;
+      updateJoystick(e.clientX, e.clientY);
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (joystickActive) resetJoystick();
+    });
 
     updateQuestStatus();
     renderInventory();
