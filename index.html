@@ -279,8 +279,9 @@
   <div id="game">
     <div class="panel">
       <h1>Block Builder 3D</h1>
-      <p><strong>Desktop :</strong> ZQSD / WASD, E pour interagir, espace pour sauter, clic pour poser un bloc après la quête.</p>
+      <p><strong>Desktop :</strong> ZQSD / WASD, E pour interagir, <strong>espace</strong> pour sauter, <strong>clic</strong> pour poser un bloc après la quête.</p>
       <p><strong>Mobile :</strong> joystick à gauche, <strong>E</strong> pour interagir, <strong>↑</strong> pour sauter, <strong>+</strong> pour poser un bloc.</p>
+      <p><strong>Astuce :</strong> après les 3 coffres, vise le sol ou le bord d’un bloc puis pose un bloc pour <strong>agrandir la zone</strong>. Ensuite saute dessus pour monter.</p>
       <div class="quest" id="questText"></div>
       <div class="buildInfo" id="buildInfo"></div>
     </div>
@@ -622,7 +623,7 @@
       questText.innerHTML = `<strong>${phase} :</strong> ${state.message}<br><br><strong>Cristaux :</strong> ${state.crystalsFound}/3`;
       if (state.buildModeUnlocked) {
         buildInfo.style.display = 'block';
-        buildInfo.innerHTML = `<strong>Mode construction :</strong> bloc sélectionné <strong>${blockDefs[state.selectedBlock].label}</strong>.<br>Choisis un bloc dans la barre du bas puis pose-le pour agrandir ton terrain ou monter des murs.`;
+        buildInfo.innerHTML = `<strong>Mode construction :</strong> bloc sélectionné <strong>${blockDefs[state.selectedBlock].label}</strong>.<br><strong>Comment agrandir le terrain :</strong> vise le bord du sol ou d’un bloc, puis pose un bloc pour créer une extension.<br><strong>Comment monter dessus :</strong> rapproche-toi puis appuie sur <strong>espace</strong> sur ordinateur ou <strong>↑</strong> sur mobile.`;
         crosshair.style.display = 'block';
       } else {
         buildInfo.style.display = 'none';
@@ -807,7 +808,7 @@
     function handleJump(dt) {
       const support = getSupportHeight(player.position.x, player.position.z);
       if (input.jump && playerState.onGround) {
-        playerState.velocityY = 9.2;
+        playerState.velocityY = 10.5;
         playerState.onGround = false;
       }
 
@@ -854,11 +855,22 @@
 
     function getPlacementTarget() {
       if (!state.buildModeUnlocked) return null;
+
       const origin = camera.position.clone();
-      const target = new THREE.Vector3(player.position.x, player.position.y + 2.4, player.position.z).sub(camera.position).normalize();
+      const target = new THREE.Vector3(player.position.x, player.position.y + 2.4, player.position.z)
+        .sub(camera.position)
+        .normalize();
       raycaster.set(origin, target);
+
       const intersects = raycaster.intersectObjects(buildableBlocks, false);
-      if (!intersects.length) return null;
+      if (!intersects.length) {
+        const farPoint = origin.clone().add(target.clone().multiplyScalar(12));
+        farPoint.x = Math.round(farPoint.x / tileSize) * tileSize;
+        farPoint.z = Math.round(farPoint.z / tileSize) * tileSize;
+        farPoint.y = 1;
+        return farPoint;
+      }
+
       const hit = intersects[0];
       const normal = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
       const pos = hit.object.position.clone().add(normal.multiplyScalar(tileSize));
