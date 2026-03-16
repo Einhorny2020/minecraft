@@ -246,13 +246,32 @@
       .panel p { font-size: 11px; margin-bottom: 4px; }
       .quest, .buildInfo { font-size: 11px; padding: 8px; }
       .interact { right: 12px; top: 142px; max-width: calc(100vw - 24px); font-size: 11px; padding: 8px 10px; }
-      .hotbar { gap: 6px; padding: 8px; bottom: 10px; }
-      .slot { width: 44px; height: 44px; border-radius: 10px; }
+      .hotbar {
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+        bottom: 8px;
+        gap: 6px;
+        padding: 8px;
+        width: calc(100vw - 24px);
+        max-width: calc(100vw - 24px);
+        overflow-x: auto;
+        overflow-y: hidden;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        -webkit-overflow-scrolling: touch;
+      }
+      .slot { flex: 0 0 auto; width: 46px; height: 46px; border-radius: 10px; }
       .slot strong { font-size: 16px; margin-bottom: 2px; }
       .slot span { font-size: 9px; }
       .card { padding: 18px; }
       .card h2 { font-size: 22px; }
       .card p { font-size: 14px; }
+      #joystickBase { left: 14px; bottom: 118px; width: 118px; height: 118px; }
+      #joystickKnob { left: 29px; top: 29px; width: 60px; height: 60px; }
+      #actionBtn { right: 14px; bottom: 122px; width: 74px; height: 74px; }
+      #jumpBtn { right: 98px; bottom: 64px; width: 70px; height: 70px; }
+      #placeBtn { right: 14px; bottom: 46px; width: 70px; height: 70px; }
     }
   </style>
 </head>
@@ -594,7 +613,8 @@
       bob: 0,
       pitch: 0.45,
       yawOffset: 0,
-      cameraDistance: 9
+      cameraDistance: 9,
+      supportTop: 0
     };
 
     function updateQuest() {
@@ -729,6 +749,19 @@
       return false;
     }
 
+    function getSupportHeight(x, z) {
+      let support = 0;
+      for (const entry of blockMap.values()) {
+        if (!entry.solid) continue;
+        const half = tileSize / 2;
+        if (x >= entry.x - half && x <= entry.x + half && z >= entry.z - half && z <= entry.z + half) {
+          const top = entry.y + tileSize / 2;
+          if (top > support) support = top;
+        }
+      }
+      return support;
+    }
+
     function handleMovement(dt) {
       let moveX = 0, moveZ = 0;
       if (input.up) moveZ -= 1;
@@ -739,14 +772,27 @@
 
       const len = Math.hypot(moveX, moveZ);
       const speed = 9;
+      const currentSupport = getSupportHeight(player.position.x, player.position.z);
+      playerState.supportTop = currentSupport;
+
       if (len > 0.001) {
-        moveX /= len; moveZ /= len;
+        moveX /= len;
+        moveZ /= len;
         playerState.heading = Math.atan2(moveX, moveZ);
         player.rotation.y = playerState.heading;
+
         const nextX = player.position.x + moveX * speed * dt;
         const nextZ = player.position.z + moveZ * speed * dt;
-        if (!collides(nextX, player.position.z, player.position.y)) player.position.x = nextX;
-        if (!collides(player.position.x, nextZ, player.position.y)) player.position.z = nextZ;
+        const nextSupportX = getSupportHeight(nextX, player.position.z);
+        const nextSupportZ = getSupportHeight(player.position.x, nextZ);
+
+        if (nextSupportX - currentSupport <= tileSize + 0.15 && !collides(nextX, player.position.z, Math.max(player.position.y, nextSupportX))) {
+          player.position.x = nextX;
+        }
+        if (nextSupportZ - currentSupport <= tileSize + 0.15 && !collides(player.position.x, nextZ, Math.max(player.position.y, nextSupportZ))) {
+          player.position.z = nextZ;
+        }
+
         playerState.bob += dt * 11;
         const swing = Math.sin(playerState.bob) * 0.7;
         player.userData.parts.legL.rotation.x = swing;
@@ -759,16 +805,24 @@
     }
 
     function handleJump(dt) {
+      const support = getSupportHeight(player.position.x, player.position.z);
       if (input.jump && playerState.onGround) {
         playerState.velocityY = 9.2;
         playerState.onGround = false;
       }
-      playerState.velocityY -= 20 * dt;
-      player.position.y += playerState.velocityY * dt;
-      if (player.position.y <= 0) {
-        player.position.y = 0;
+
+      if (!playerState.onGround) {
+        playerState.velocityY -= 20 * dt;
+        player.position.y += playerState.velocityY * dt;
+      }
+
+      const desiredGroundY = support;
+      if (player.position.y <= desiredGroundY) {
+        player.position.y = desiredGroundY;
         playerState.velocityY = 0;
         playerState.onGround = true;
+      } else {
+        playerState.onGround = false;
       }
     }
 
@@ -833,7 +887,11 @@
       }
       const k = keyFor(pos.x, pos.y, pos.z);
       if (blockMap.has(k)) return;
-      if (distance2D({ x: pos.x, z: pos.z }, player.position) < 1.8 && Math.abs(pos.y - player.position.y) < 3.5) {
+      const blockTop = pos.y + tileSize / 2;
+      const tooCloseX = Math.abs(pos.x - player.position.x) < 1.25;
+      const tooCloseZ = Math.abs(pos.z - player.position.z) < 1.25;
+      const tooCloseY = Math.abs(blockTop - player.position.y) < playerState.height;
+      if (tooCloseX && tooCloseZ && tooCloseY) {
         state.message = 'Tu es trop près pour poser ce bloc ici.';
         updateQuest();
         return;
