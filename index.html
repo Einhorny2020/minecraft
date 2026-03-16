@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Block Quest 3D</title>
+  <title>Block Builder 3D</title>
   <style>
     * { box-sizing: border-box; }
     html, body {
@@ -25,17 +25,13 @@
       background: linear-gradient(to bottom, #8ed6ff 0%, #cdefff 55%, #7bc96f 56%, #5ba94f 100%);
     }
 
-    canvas {
-      display: block;
-      width: 100%;
-      height: 100%;
-    }
+    canvas { display: block; width: 100%; height: 100%; }
 
     .panel {
       position: absolute;
       left: 14px;
       top: 14px;
-      width: min(360px, calc(100vw - 28px));
+      width: min(390px, calc(100vw - 28px));
       background: rgba(15, 23, 42, 0.82);
       border: 2px solid rgba(255,255,255,0.12);
       border-radius: 16px;
@@ -43,23 +39,14 @@
       backdrop-filter: blur(8px);
       box-shadow: 0 12px 28px rgba(0,0,0,0.25);
       z-index: 20;
-      max-height: min(40vh, 290px);
+      max-height: min(42vh, 320px);
       overflow: auto;
     }
 
-    .panel h1 {
-      margin: 0 0 8px 0;
-      font-size: 19px;
-    }
+    .panel h1 { margin: 0 0 8px 0; font-size: 19px; }
+    .panel p { margin: 0 0 6px 0; font-size: 13px; line-height: 1.35; color: #e8eef8; }
 
-    .panel p {
-      margin: 0 0 6px 0;
-      font-size: 13px;
-      line-height: 1.35;
-      color: #e8eef8;
-    }
-
-    .quest {
+    .quest, .buildInfo {
       margin-top: 8px;
       padding: 10px;
       border-radius: 12px;
@@ -68,11 +55,13 @@
       line-height: 1.4;
     }
 
+    .buildInfo { display: none; }
+
     .interact {
       position: absolute;
       right: 14px;
       top: 14px;
-      max-width: 280px;
+      max-width: 320px;
       background: rgba(15, 23, 42, 0.82);
       border: 2px solid rgba(255,255,255,0.12);
       border-radius: 14px;
@@ -82,6 +71,28 @@
       z-index: 20;
       display: none;
     }
+
+    .crosshair {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 16px;
+      height: 16px;
+      transform: translate(-50%, -50%);
+      z-index: 18;
+      pointer-events: none;
+      opacity: .9;
+      display: none;
+    }
+    .crosshair::before, .crosshair::after {
+      content: '';
+      position: absolute;
+      background: rgba(255,255,255,0.9);
+      border-radius: 4px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.35);
+    }
+    .crosshair::before { left: 7px; top: 0; width: 2px; height: 16px; }
+    .crosshair::after { left: 0; top: 7px; width: 16px; height: 2px; }
 
     .hotbar {
       position: absolute;
@@ -95,11 +106,14 @@
       border: 2px solid rgba(255,255,255,0.12);
       border-radius: 16px;
       z-index: 20;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: min(96vw, 720px);
     }
 
     .slot {
-      width: 56px;
-      height: 56px;
+      width: 58px;
+      height: 58px;
       border-radius: 12px;
       background: rgba(255,255,255,0.08);
       border: 2px solid rgba(255,255,255,0.12);
@@ -110,21 +124,18 @@
       font-size: 10px;
       color: #dce6f5;
       position: relative;
+      cursor: pointer;
+      user-select: none;
     }
 
-    .slot strong {
-      font-size: 20px;
-      margin-bottom: 4px;
+    .slot.active {
+      border-color: #7dd3fc;
+      box-shadow: inset 0 0 0 2px rgba(125, 211, 252, 0.25), 0 0 18px rgba(125, 211, 252, 0.15);
+      transform: translateY(-2px);
     }
 
-    .slot .count {
-      position: absolute;
-      right: 6px;
-      bottom: 4px;
-      font-size: 12px;
-      font-weight: bold;
-      color: #fff;
-    }
+    .slot strong { font-size: 20px; margin-bottom: 4px; }
+    .slot .count { position: absolute; right: 6px; bottom: 4px; font-size: 12px; font-weight: bold; color: #fff; }
 
     .modal {
       position: absolute;
@@ -136,11 +147,10 @@
       z-index: 30;
       padding: 16px;
     }
-
     .modal.show { display: flex; }
 
     .card {
-      width: min(620px, 100%);
+      width: min(680px, 100%);
       background: rgba(15, 23, 42, 0.94);
       border: 2px solid rgba(255,255,255,0.12);
       border-radius: 20px;
@@ -148,18 +158,8 @@
       text-align: center;
       box-shadow: 0 24px 70px rgba(0,0,0,0.4);
     }
-
-    .card h2 {
-      margin: 0 0 12px 0;
-      font-size: 28px;
-    }
-
-    .card p {
-      margin: 10px 0;
-      font-size: 16px;
-      line-height: 1.5;
-      color: #edf4ff;
-    }
+    .card h2 { margin: 0 0 12px 0; font-size: 28px; }
+    .card p { margin: 10px 0; font-size: 16px; line-height: 1.5; color: #edf4ff; }
 
     button {
       border: none;
@@ -172,7 +172,6 @@
       background: linear-gradient(135deg, #57d163, #2ea043);
       box-shadow: 0 10px 24px rgba(46,160,67,0.35);
     }
-
     button.secondary {
       background: linear-gradient(135deg, #4d7dff, #3562e2);
       box-shadow: 0 10px 24px rgba(53,98,226,0.35);
@@ -189,7 +188,7 @@
     #joystickBase {
       position: absolute;
       left: 18px;
-      bottom: 130px;
+      bottom: 150px;
       width: 132px;
       height: 132px;
       border-radius: 50%;
@@ -224,54 +223,31 @@
       border: 2px solid rgba(255,255,255,0.14);
       background: linear-gradient(135deg, #4d7dff, #3562e2);
       color: #fff;
-      font-size: 28px;
+      font-size: 24px;
       font-weight: bold;
       box-shadow: 0 12px 24px rgba(53,98,226,0.35);
     }
-
-    #actionBtn {
-      right: 18px;
-      bottom: 132px;
-    }
-
+    #actionBtn { right: 18px; bottom: 152px; }
     #jumpBtn {
       right: 112px;
-      bottom: 58px;
+      bottom: 74px;
       background: linear-gradient(135deg, #ffb347, #ff8f1f);
       box-shadow: 0 12px 24px rgba(255,143,31,0.35);
     }
+    #placeBtn {
+      right: 18px;
+      bottom: 58px;
+      background: linear-gradient(135deg, #57d163, #2ea043);
+    }
 
     @media (max-width: 860px) {
-      .panel {
-        width: calc(100vw - 24px);
-        left: 12px;
-        top: 12px;
-        padding: 10px;
-        max-height: 112px;
-      }
+      .panel { width: calc(100vw - 24px); left: 12px; top: 12px; padding: 10px; max-height: 126px; }
       .panel h1 { font-size: 16px; margin-bottom: 5px; }
       .panel p { font-size: 11px; margin-bottom: 4px; }
-      .quest { font-size: 11px; padding: 8px; }
-      .interact {
-        right: 12px;
-        top: 130px;
-        max-width: calc(100vw - 24px);
-        font-size: 11px;
-        padding: 8px 10px;
-      }
-      .hotbar {
-        left: auto;
-        right: 12px;
-        bottom: 12px;
-        transform: none;
-        gap: 6px;
-        padding: 8px;
-      }
-      .slot {
-        width: 44px;
-        height: 44px;
-        border-radius: 10px;
-      }
+      .quest, .buildInfo { font-size: 11px; padding: 8px; }
+      .interact { right: 12px; top: 142px; max-width: calc(100vw - 24px); font-size: 11px; padding: 8px 10px; }
+      .hotbar { gap: 6px; padding: 8px; bottom: 10px; }
+      .slot { width: 44px; height: 44px; border-radius: 10px; }
       .slot strong { font-size: 16px; margin-bottom: 2px; }
       .slot span { font-size: 9px; }
       .card { padding: 18px; }
@@ -283,39 +259,39 @@
 <body>
   <div id="game">
     <div class="panel">
-      <h1>Block Quest 3D</h1>
-      <p><strong>Desktop :</strong> ZQSD / WASD, E pour interagir, espace pour sauter.</p>
-      <p><strong>Mobile :</strong> joystick à gauche, <strong>E</strong> pour interagir, <strong>↑</strong> pour sauter.</p>
+      <h1>Block Builder 3D</h1>
+      <p><strong>Desktop :</strong> ZQSD / WASD, E pour interagir, espace pour sauter, clic pour poser un bloc après la quête.</p>
+      <p><strong>Mobile :</strong> joystick à gauche, <strong>E</strong> pour interagir, <strong>↑</strong> pour sauter, <strong>+</strong> pour poser un bloc.</p>
       <div class="quest" id="questText"></div>
+      <div class="buildInfo" id="buildInfo"></div>
     </div>
 
     <div class="interact" id="interactHint"></div>
-
+    <div class="crosshair" id="crosshair"></div>
     <div class="hotbar" id="hotbar"></div>
 
     <div id="mobileUI">
-      <div id="joystickBase">
-        <div id="joystickKnob"></div>
-      </div>
+      <div id="joystickBase"><div id="joystickKnob"></div></div>
       <button class="roundBtn" id="actionBtn">E</button>
       <button class="roundBtn" id="jumpBtn">↑</button>
+      <button class="roundBtn" id="placeBtn">+</button>
     </div>
 
     <div class="modal show" id="startModal">
       <div class="card">
-        <h2>Bienvenue dans Block Quest 3D</h2>
-        <p>Tu es dans un monde <strong>3D voxel inspiré de Minecraft</strong>. Explore la map, trouve les trois cristaux et réactive le portail du village.</p>
-        <p>Tout tient dans un seul <strong>index.html</strong>, prêt à être déployé sur Vercel.</p>
-        <button id="startBtn">Lancer la quête</button>
+        <h2>Bienvenue dans Block Builder 3D</h2>
+        <p>Tu commences par une <strong>première quête</strong> : retrouver trois cristaux pour sécuriser ton terrain.</p>
+        <p>Ensuite, tu débloques le <strong>mode construction</strong> : poser des blocs, agrandir ta zone et commencer à construire comme dans un mini Minecraft.</p>
+        <button id="startBtn">Lancer la partie</button>
       </div>
     </div>
 
     <div class="modal" id="winModal">
       <div class="card">
-        <h2>Victoire</h2>
-        <p>Tu as récupéré tous les cristaux et réactivé le portail.</p>
-        <p>Cette base peut maintenant évoluer vers un vrai mini-jeu complet.</p>
-        <button class="secondary" id="restartBtn">Rejouer</button>
+        <h2>Mode construction débloqué</h2>
+        <p>La première quête est terminée. Le terrain est maintenant stabilisé.</p>
+        <p>Tu peux poser des blocs, étendre ta surface et construire tes premières maisons.</p>
+        <button class="secondary" id="continueBtn">Continuer à construire</button>
       </div>
     </div>
   </div>
@@ -325,24 +301,27 @@
 
     const game = document.getElementById('game');
     const questText = document.getElementById('questText');
+    const buildInfo = document.getElementById('buildInfo');
     const hotbar = document.getElementById('hotbar');
     const interactHint = document.getElementById('interactHint');
+    const crosshair = document.getElementById('crosshair');
     const mobileUI = document.getElementById('mobileUI');
     const joystickBase = document.getElementById('joystickBase');
     const joystickKnob = document.getElementById('joystickKnob');
     const actionBtn = document.getElementById('actionBtn');
     const jumpBtn = document.getElementById('jumpBtn');
+    const placeBtn = document.getElementById('placeBtn');
     const startModal = document.getElementById('startModal');
     const winModal = document.getElementById('winModal');
     const startBtn = document.getElementById('startBtn');
-    const restartBtn = document.getElementById('restartBtn');
+    const continueBtn = document.getElementById('continueBtn');
 
     const isTouch = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
     if (isTouch) mobileUI.style.display = 'block';
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x8ed6ff);
-    scene.fog = new THREE.Fog(0x8ed6ff, 60, 145);
+    scene.fog = new THREE.Fog(0x8ed6ff, 70, 170);
 
     const camera = new THREE.PerspectiveCamera(68, window.innerWidth / window.innerHeight, 0.1, 500);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -352,273 +331,301 @@
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     game.appendChild(renderer.domElement);
 
-    const hemi = new THREE.HemisphereLight(0xffffff, 0x6c8a4d, 1.15);
+    const hemi = new THREE.HemisphereLight(0xffffff, 0x6c8a4d, 1.2);
     scene.add(hemi);
 
-    const sun = new THREE.DirectionalLight(0xffffff, 1.2);
-    sun.position.set(40, 60, 20);
+    const sun = new THREE.DirectionalLight(0xffffff, 1.25);
+    sun.position.set(50, 70, 20);
     sun.castShadow = true;
     sun.shadow.mapSize.width = 2048;
     sun.shadow.mapSize.height = 2048;
-    sun.shadow.camera.left = -90;
-    sun.shadow.camera.right = 90;
-    sun.shadow.camera.top = 90;
-    sun.shadow.camera.bottom = -90;
+    sun.shadow.camera.left = -110;
+    sun.shadow.camera.right = 110;
+    sun.shadow.camera.top = 110;
+    sun.shadow.camera.bottom = -110;
     scene.add(sun);
 
-    const worldSize = 30;
+    const worldSize = 32;
     const tileSize = 2;
     const worldHalf = (worldSize * tileSize) / 2;
     const obstacles = [];
-    const interactables = [];
-    const entities = [];
-    const crystals = [];
+    const crystalsFx = [];
+    const blockMap = new Map();
+    const buildableBlocks = [];
+
+    const input = {
+      up: false, down: false, left: false, right: false, jump: false,
+      joyX: 0, joyY: 0, joyActive: false
+    };
 
     const state = {
       running: false,
       questStarted: false,
       crystalsFound: 0,
       questCompleted: false,
-      message: 'Parle au villageois près du portail pour commencer.',
-      inventory: { crystal: 0, wood: 0, food: 0 }
+      buildModeUnlocked: false,
+      selectedBlock: 'grass',
+      message: 'Parle au villageois près du totem pour commencer.',
+      inventory: { crystal: 0, wood: 16, food: 0, grass: 24, dirt: 24, stone: 18, woodBlock: 18 }
     };
 
-    const input = {
-      up: false,
-      down: false,
-      left: false,
-      right: false,
-      jump: false,
-      interact: false,
-      joyX: 0,
-      joyY: 0,
-      joyActive: false
+    const blockDefs = {
+      crystal: { icon: '◆', label: 'Cristal', color: 0x69e3ff, placeable: false },
+      grass: { icon: '▦', label: 'Herbe', color: 0x6fbe63, side: 0x8b5a2b, placeable: true },
+      dirt: { icon: '▥', label: 'Terre', color: 0x8b5a2b, placeable: true },
+      stone: { icon: '◫', label: 'Pierre', color: 0x8e8e8e, placeable: true },
+      woodBlock: { icon: '▤', label: 'Bois', color: 0x9b6b3d, placeable: true }
     };
 
     const clock = new THREE.Clock();
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2(0, 0);
 
-    function makeBox(w, h, d, color) {
-      const mesh = new THREE.Mesh(
-        new THREE.BoxGeometry(w, h, d),
-        new THREE.MeshLambertMaterial({ color })
-      );
+    function makeMaterial(topColor, sideColor = null) {
+      if (!sideColor) return new THREE.MeshLambertMaterial({ color: topColor });
+      return [
+        new THREE.MeshLambertMaterial({ color: sideColor }),
+        new THREE.MeshLambertMaterial({ color: sideColor }),
+        new THREE.MeshLambertMaterial({ color: topColor }),
+        new THREE.MeshLambertMaterial({ color: sideColor }),
+        new THREE.MeshLambertMaterial({ color: sideColor }),
+        new THREE.MeshLambertMaterial({ color: sideColor })
+      ];
+    }
+
+    function makeBox(w, h, d, material) {
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
       mesh.castShadow = true;
       mesh.receiveShadow = true;
       return mesh;
     }
 
-    function addObstacle(mesh, padding = 0.35) {
+    function registerObstacleFromMesh(mesh, padding = 0.25) {
       const box = new THREE.Box3().setFromObject(mesh);
       box.min.x -= padding; box.min.z -= padding;
       box.max.x += padding; box.max.z += padding;
       obstacles.push(box);
+      return box;
+    }
+
+    function keyFor(x, y, z) { return `${x}|${y}|${z}`; }
+
+    function makePlacedBlock(x, y, z, type, addObstacle = true) {
+      const def = blockDefs[type];
+      const material = makeMaterial(def.color, def.side || def.color);
+      const mesh = makeBox(tileSize, tileSize, tileSize, material);
+      mesh.position.set(x, y, z);
+      mesh.userData = { type: 'placedBlock', blockType: type, grid: { x, y, z } };
+      scene.add(mesh);
+      const entry = { mesh, type, x, y, z, solid: addObstacle };
+      blockMap.set(keyFor(x, y, z), entry);
+      buildableBlocks.push(mesh);
+      if (addObstacle) entry.box = registerObstacleFromMesh(mesh, 0.05);
+      return entry;
     }
 
     function makeGround() {
-      const group = new THREE.Group();
-      const grass1 = new THREE.MeshLambertMaterial({ color: 0x6fbe63 });
-      const grass2 = new THREE.MeshLambertMaterial({ color: 0x68b75d });
-      const dirt = new THREE.MeshLambertMaterial({ color: 0x8b5a2b });
-
-      for (let x = 0; x < worldSize; x++) {
-        for (let z = 0; z < worldSize; z++) {
-          const top = new THREE.Mesh(new THREE.BoxGeometry(tileSize, 1.2, tileSize), (x + z) % 2 === 0 ? grass1 : grass2);
-          top.position.set(x * tileSize - worldHalf + tileSize / 2, -0.6, z * tileSize - worldHalf + tileSize / 2);
-          top.receiveShadow = true;
-          group.add(top);
-
-          const side = new THREE.Mesh(new THREE.BoxGeometry(tileSize, 0.28, tileSize), dirt);
-          side.position.set(top.position.x, -1.34, top.position.z);
-          side.receiveShadow = true;
-          group.add(side);
+      for (let gx = 0; gx < worldSize; gx++) {
+        for (let gz = 0; gz < worldSize; gz++) {
+          const x = gx * tileSize - worldHalf + tileSize / 2;
+          const z = gz * tileSize - worldHalf + tileSize / 2;
+          makePlacedBlock(x, -1, z, 'grass', false);
         }
       }
-      scene.add(group);
     }
 
     function makeTree(x, z) {
-      const tree = new THREE.Group();
-      const trunk = makeBox(0.9, 3.2, 0.9, 0x7b4d25);
-      trunk.position.y = 1.6;
-      tree.add(trunk);
-
-      const leaf1 = makeBox(2.8, 2.2, 2.8, 0x2f8f3f);
-      leaf1.position.y = 3.8;
-      tree.add(leaf1);
-      const leaf2 = makeBox(2.2, 1.8, 2.2, 0x36a84c);
-      leaf2.position.y = 5.1;
-      tree.add(leaf2);
-
-      tree.position.set(x, 0, z);
-      scene.add(tree);
-      addObstacle(tree, 0.55);
+      for (let i = 0; i < 3; i++) makePlacedBlock(x, i * tileSize + 1, z, 'woodBlock', true);
+      const leaves = [
+        [0, 7, 0], [0, 9, 0], [2, 7, 0], [-2, 7, 0], [0, 7, 2], [0, 7, -2], [2, 9, 0], [-2, 9, 0], [0, 9, 2], [0, 9, -2]
+      ];
+      leaves.forEach(([dx, dy, dz]) => {
+        const leaf = makeBox(tileSize, tileSize, tileSize, makeMaterial(0x2f8f3f));
+        leaf.position.set(x + dx, dy, z + dz);
+        leaf.castShadow = true;
+        leaf.receiveShadow = true;
+        scene.add(leaf);
+      });
     }
 
-    function makeRock(x, z, sx = 2, sy = 2, sz = 2) {
-      const rock = makeBox(sx, sy, sz, 0x8e8e8e);
-      rock.position.set(x, sy / 2 - 0.02, z);
-      scene.add(rock);
-      addObstacle(rock, 0.2);
+    function makeRock(x, z, height = 2) {
+      for (let i = 0; i < height; i++) makePlacedBlock(x, i * tileSize + 1, z, 'stone', true);
     }
 
     function makeWater(x, z, w, d) {
       const water = new THREE.Mesh(
-        new THREE.BoxGeometry(w, 0.3, d),
-        new THREE.MeshLambertMaterial({ color: 0x49a6ff, transparent: true, opacity: 0.88 })
+        new THREE.BoxGeometry(w, 0.25, d),
+        new THREE.MeshLambertMaterial({ color: 0x49a6ff, transparent: true, opacity: 0.85 })
       );
-      water.position.set(x, -0.38, z);
+      water.position.set(x, -0.72, z);
       water.receiveShadow = true;
       scene.add(water);
     }
 
     function makeFlower(x, z) {
-      const group = new THREE.Group();
-      const stem = makeBox(0.12, 0.9, 0.12, 0x2a8f3e);
-      stem.position.y = 0.45;
-      group.add(stem);
-      const top = makeBox(0.55, 0.32, 0.55, 0xff5fa8);
-      top.position.y = 0.95;
-      group.add(top);
-      group.position.set(x, 0, z);
-      scene.add(group);
+      const stem = makeBox(0.12, 0.9, 0.12, makeMaterial(0x2a8f3e));
+      stem.position.set(x, 0.45, z);
+      scene.add(stem);
+      const top = makeBox(0.55, 0.32, 0.55, makeMaterial(0xff5fa8));
+      top.position.set(x, 0.95, z);
+      scene.add(top);
     }
 
-    function makePortal(x, z) {
+    function makeTotem(x, z) {
       const group = new THREE.Group();
-      const frameMat = 0x5f3a1f;
-      const left = makeBox(1, 6, 1, frameMat);
-      left.position.set(-1.8, 3, 0);
-      const right = makeBox(1, 6, 1, frameMat);
-      right.position.set(1.8, 3, 0);
-      const top = makeBox(4.6, 1, 1, frameMat);
-      top.position.set(0, 5.5, 0);
-      const core = new THREE.Mesh(
-        new THREE.BoxGeometry(2.8, 4.6, 0.35),
-        new THREE.MeshLambertMaterial({ color: 0x1d2231, emissive: 0x000000 })
-      );
-      core.position.set(0, 3, 0);
-      core.castShadow = true;
-      group.add(left, right, top, core);
+      const base = makeBox(2, 3, 2, makeMaterial(0x5f3a1f));
+      base.position.y = 1.5;
+      const core = makeBox(1.2, 1.2, 1.2, makeMaterial(0x1d2231));
+      core.position.y = 4.2;
+      group.add(base, core);
       group.position.set(x, 0, z);
+      group.userData = { type: 'totem' };
       scene.add(group);
-      addObstacle(group, 0.45);
-      return { group, core, x, z, type: 'portal' };
+      registerObstacleFromMesh(group, 0.2);
+      return { group, core, x, z, type: 'totem' };
     }
 
     function makeChest(x, z, id) {
       const group = new THREE.Group();
-      const base = makeBox(1.4, 0.8, 1, 0xb78148);
+      const base = makeBox(1.5, 0.8, 1.1, makeMaterial(0xb78148));
       base.position.y = 0.4;
-      const lid = makeBox(1.4, 0.4, 1, 0x8e6b46);
-      lid.position.y = 1;
-      const lock = makeBox(0.18, 0.22, 0.12, 0xf4d35f);
-      lock.position.set(0, 0.8, 0.56);
+      const lid = makeBox(1.5, 0.45, 1.1, makeMaterial(0x8e6b46));
+      lid.position.y = 1.02;
+      const lock = makeBox(0.18, 0.22, 0.12, makeMaterial(0xf4d35f));
+      lock.position.set(0, 0.82, 0.6);
       group.add(base, lid, lock);
       group.position.set(x, 0, z);
       scene.add(group);
-      addObstacle(group, 0.15);
-      const obj = { group, x, z, id, opened: false, type: 'chest' };
-      interactables.push(obj);
-      return obj;
+      registerObstacleFromMesh(group, 0.12);
+      return { group, lid, x, z, id, opened: false, type: 'chest' };
     }
 
-    function makeCrystalMesh() {
+    function makeCrystalFx(x, z) {
       const geom = new THREE.OctahedronGeometry(0.55, 0);
       const mat = new THREE.MeshLambertMaterial({ color: 0x69e3ff, emissive: 0x155b6f });
       const mesh = new THREE.Mesh(geom, mat);
       mesh.castShadow = true;
-      return mesh;
+      mesh.position.set(x, 3, z);
+      scene.add(mesh);
+      crystalsFx.push({ mesh, t: Math.random() * 2, life: 1.2 });
     }
 
     function makeNPC(x, z) {
       const npc = new THREE.Group();
-      const head = makeBox(0.9, 0.9, 0.9, 0xd6a77a);
-      head.position.y = 2.7;
-      const body = makeBox(1.1, 1.5, 0.8, 0x4f7bff);
-      body.position.y = 1.6;
-      const leg1 = makeBox(0.34, 1, 0.34, 0x68462b);
-      leg1.position.set(-0.22, 0.5, 0);
-      const leg2 = makeBox(0.34, 1, 0.34, 0x68462b);
-      leg2.position.set(0.22, 0.5, 0);
-      npc.add(head, body, leg1, leg2);
+      const skin = makeMaterial(0xe0b18a);
+      const shirt = makeMaterial(0x4f7bff);
+      const pants = makeMaterial(0x5b3d28);
+      const shoes = makeMaterial(0x2b2b2b);
+
+      const head = makeBox(1, 1, 1, skin);
+      head.position.y = 3.5;
+      const hair = makeBox(1.02, 0.35, 1.02, makeMaterial(0x3b2416));
+      hair.position.y = 4.02;
+      const body = makeBox(1.2, 1.5, 0.8, shirt);
+      body.position.y = 2.15;
+      const armL = makeBox(0.35, 1.35, 0.35, skin);
+      armL.position.set(-0.8, 2.1, 0);
+      const armR = makeBox(0.35, 1.35, 0.35, skin);
+      armR.position.set(0.8, 2.1, 0);
+      const legL = makeBox(0.38, 1.3, 0.38, pants);
+      legL.position.set(-0.26, 0.75, 0);
+      const legR = makeBox(0.38, 1.3, 0.38, pants);
+      legR.position.set(0.26, 0.75, 0);
+      const shoeL = makeBox(0.42, 0.2, 0.5, shoes); shoeL.position.set(-0.26, 0.1, 0.05);
+      const shoeR = makeBox(0.42, 0.2, 0.5, shoes); shoeR.position.set(0.26, 0.1, 0.05);
+      npc.add(head, hair, body, armL, armR, legL, legR, shoeL, shoeR);
       npc.position.set(x, 0, z);
       scene.add(npc);
-      addObstacle(npc, 0.35);
-      const label = { group: npc, x, z, type: 'npc', name: 'Eldon' };
-      interactables.push(label);
-      return label;
+      registerObstacleFromMesh(npc, 0.25);
+      return { group: npc, x, z, type: 'npc', name: 'Eldon' };
     }
 
     function makePlayer() {
-      const group = new THREE.Group();
-      const head = makeBox(0.9, 0.9, 0.9, 0xf0c59a);
-      head.position.y = 2.7;
-      const body = makeBox(1.1, 1.5, 0.8, 0x36b0ff);
-      body.position.y = 1.6;
-      const leg1 = makeBox(0.34, 1, 0.34, 0x1c3d7a);
-      leg1.position.set(-0.22, 0.5, 0);
-      const leg2 = makeBox(0.34, 1, 0.34, 0x1c3d7a);
-      leg2.position.set(0.22, 0.5, 0);
-      group.add(head, body, leg1, leg2);
-      group.position.set(-22, 0, 0);
-      scene.add(group);
-      return group;
+      const player = new THREE.Group();
+      const skin = makeMaterial(0xf0c59a);
+      const shirt = makeMaterial(0x36b0ff);
+      const shirtDark = makeMaterial(0x2287cb);
+      const pants = makeMaterial(0x1c3d7a);
+      const shoes = makeMaterial(0x222222);
+      const hair = makeMaterial(0x4a2a12);
+
+      const head = makeBox(1.05, 1.05, 1.05, skin); head.position.y = 3.75;
+      const hairTop = makeBox(1.07, 0.35, 1.07, hair); hairTop.position.y = 4.3;
+      const hairBack = makeBox(1.07, 0.5, 0.22, hair); hairBack.position.set(0, 3.9, -0.42);
+      const body = makeBox(1.3, 1.7, 0.82, shirt); body.position.y = 2.3;
+      const chestPlate = makeBox(1.1, 0.4, 0.18, shirtDark); chestPlate.position.set(0, 2.55, 0.5);
+      const armL = makeBox(0.4, 1.55, 0.4, skin); armL.position.set(-0.88, 2.25, 0);
+      const armR = makeBox(0.4, 1.55, 0.4, skin); armR.position.set(0.88, 2.25, 0);
+      const sleeveL = makeBox(0.42, 0.55, 0.42, shirt); sleeveL.position.set(-0.88, 2.72, 0);
+      const sleeveR = makeBox(0.42, 0.55, 0.42, shirt); sleeveR.position.set(0.88, 2.72, 0);
+      const legL = makeBox(0.44, 1.55, 0.44, pants); legL.position.set(-0.28, 0.88, 0);
+      const legR = makeBox(0.44, 1.55, 0.44, pants); legR.position.set(0.28, 0.88, 0);
+      const shoeL = makeBox(0.5, 0.22, 0.58, shoes); shoeL.position.set(-0.28, 0.12, 0.07);
+      const shoeR = makeBox(0.5, 0.22, 0.58, shoes); shoeR.position.set(0.28, 0.12, 0.07);
+      player.add(head, hairTop, hairBack, body, chestPlate, armL, armR, sleeveL, sleeveR, legL, legR, shoeL, shoeR);
+      player.position.set(-22, 0, 0);
+      scene.add(player);
+      player.userData.parts = { armL, armR, legL, legR };
+      return player;
     }
 
     function buildWorld() {
       makeGround();
-
-      [
-        [-24,-22],[-16,-20],[-8,-24],[6,-22],[18,-18],[24,-8],[22,10],[15,18],[2,22],[-12,20],[-22,14],[-25,2]
-      ].forEach(([x,z]) => makeTree(x, z));
-
-      [
-        [-10,-8, 6, 8], [18, 8, 8, 6]
-      ].forEach(([x,z,w,d]) => makeWater(x, z, w, d));
-
-      [
-        [-4,-14],[-2,-12],[4,-10],[12,14],[-18,10],[10,22],[-8,18],[18,-2]
-      ].forEach(([x,z]) => makeFlower(x, z));
-
-      [
-        [-2,-2, 3, 4, 18], [10,-14, 4, 4, 0], [16,16, 4, 5, 0], [-20,18, 5, 5, 0], [22,-22, 3, 3, 0], [-24,-8, 4, 3, 0]
-      ].forEach(([x,z,sx,sy,sz]) => makeRock(x, z, sx, sy, sz || 3));
+      [[-24,-22],[-16,-20],[-8,-24],[6,-22],[18,-18],[24,-8],[22,10],[15,18],[2,22],[-12,20],[-22,14],[-25,2]].forEach(([x,z]) => makeTree(x, z));
+      [[-10,-8, 6, 8], [18, 8, 8, 6]].forEach(([x,z,w,d]) => makeWater(x, z, w, d));
+      [[-4,-14],[-2,-12],[4,-10],[12,14],[-18,10],[10,22],[-8,18],[18,-2]].forEach(([x,z]) => makeFlower(x, z));
+      [[-2,-2, 3], [10,-14, 2], [16,16, 3], [-20,18, 2], [22,-22, 2], [-24,-8, 2]].forEach(([x,z,h]) => makeRock(x, z, h));
     }
 
     const player = makePlayer();
     buildWorld();
-    const portal = makePortal(-14, 4);
+    const totem = makeTotem(-14, 4);
     const npc = makeNPC(-20, 4);
     const chest1 = makeChest(20, -18, 1);
     const chest2 = makeChest(22, 18, 2);
     const chest3 = makeChest(-24, 20, 3);
 
     const playerState = {
-      radius: 0.7,
-      height: 3.2,
+      radius: 0.68,
+      height: 4.3,
       velocityY: 0,
       onGround: true,
       heading: 0,
-      bob: 0
+      bob: 0,
+      pitch: 0.45,
+      yawOffset: 0,
+      cameraDistance: 9
     };
 
     function updateQuest() {
-      questText.innerHTML = `<strong>Quête :</strong> ${state.message}<br><br><strong>Cristaux :</strong> ${state.crystalsFound}/3`;
+      const phase = state.buildModeUnlocked ? 'Construction débloquée' : 'Quête de départ';
+      questText.innerHTML = `<strong>${phase} :</strong> ${state.message}<br><br><strong>Cristaux :</strong> ${state.crystalsFound}/3`;
+      if (state.buildModeUnlocked) {
+        buildInfo.style.display = 'block';
+        buildInfo.innerHTML = `<strong>Mode construction :</strong> bloc sélectionné <strong>${blockDefs[state.selectedBlock].label}</strong>.<br>Choisis un bloc dans la barre du bas puis pose-le pour agrandir ton terrain ou monter des murs.`;
+        crosshair.style.display = 'block';
+      } else {
+        buildInfo.style.display = 'none';
+        crosshair.style.display = 'none';
+      }
     }
 
     function updateHotbar() {
-      const items = [
-        { key: 'crystal', icon: '◆', label: 'Cristal' },
-        { key: 'wood', icon: '▤', label: 'Bois' },
-        { key: 'food', icon: '✦', label: 'Food' }
-      ];
-      hotbar.innerHTML = items.map(item => `
-        <div class="slot">
-          <strong>${item.icon}</strong>
-          <span>${item.label}</span>
-          <span class="count">${state.inventory[item.key]}</span>
-        </div>
-      `).join('');
+      const order = ['crystal', 'grass', 'dirt', 'stone', 'woodBlock'];
+      hotbar.innerHTML = order.map(key => {
+        const def = blockDefs[key];
+        const active = state.selectedBlock === key ? 'active' : '';
+        return `<div class="slot ${active}" data-key="${key}"><strong>${def.icon}</strong><span>${def.label}</span><span class="count">${state.inventory[key] ?? 0}</span></div>`;
+      }).join('');
+      hotbar.querySelectorAll('.slot').forEach(slot => {
+        slot.addEventListener('click', () => {
+          const key = slot.dataset.key;
+          if (!blockDefs[key].placeable) return;
+          state.selectedBlock = key;
+          updateHotbar();
+          updateQuest();
+        });
+      });
     }
 
     function distance2D(a, b) {
@@ -630,22 +637,17 @@
     function getNearbyInteraction() {
       const p = player.position;
       if (distance2D(p, { x: npc.x, z: npc.z }) < 4.2) return npc;
-      if (distance2D(p, { x: portal.x, z: portal.z }) < 5.2) return portal;
-      for (const ch of [chest1, chest2, chest3]) {
-        if (distance2D(p, { x: ch.x, z: ch.z }) < 3.6) return ch;
-      }
+      if (distance2D(p, { x: totem.x, z: totem.z }) < 5.2) return totem;
+      for (const ch of [chest1, chest2, chest3]) if (distance2D(p, { x: ch.x, z: ch.z }) < 3.6) return ch;
       return null;
     }
 
     function showHint() {
       const near = getNearbyInteraction();
-      if (!near) {
-        interactHint.style.display = 'none';
-        return;
-      }
+      if (!near) { interactHint.style.display = 'none'; return; }
       let txt = '';
       if (near.type === 'npc') txt = '<strong>E</strong> pour parler à Eldon';
-      if (near.type === 'portal') txt = '<strong>E</strong> pour activer le portail';
+      if (near.type === 'totem') txt = '<strong>E</strong> pour stabiliser la zone';
       if (near.type === 'chest') txt = `<strong>E</strong> pour ouvrir le coffre ${near.id}`;
       interactHint.innerHTML = txt;
       interactHint.style.display = 'block';
@@ -663,19 +665,30 @@
         return;
       }
       chest.opened = true;
-      chest.group.children[1].rotation.x = -0.9;
-      const crystal = makeCrystalMesh();
-      crystal.position.set(chest.x, 2.6, chest.z);
-      scene.add(crystal);
-      crystals.push({ mesh: crystal, t: Math.random() * 2, life: 1.25 });
+      chest.lid.rotation.x = -0.95;
+      makeCrystalFx(chest.x, chest.z);
       state.crystalsFound += 1;
       state.inventory.crystal += 1;
       state.message = `Tu as trouvé un cristal dans le coffre ${chest.id}.`;
-      if (state.crystalsFound === 3) {
-        state.message += ' Retourne vers le portail.';
-      }
+      if (state.crystalsFound === 3) state.message += ' Retourne vers le totem.';
       updateQuest();
       updateHotbar();
+    }
+
+    function unlockBuildMode() {
+      state.questCompleted = true;
+      state.buildModeUnlocked = true;
+      state.message = 'Le terrain est sécurisé. Tu peux maintenant poser des blocs, agrandir la zone et construire.';
+      state.inventory.grass += 18;
+      state.inventory.dirt += 12;
+      state.inventory.stone += 12;
+      state.inventory.woodBlock += 14;
+      totem.core.material.color.set(0x57d163);
+      totem.core.material.emissive = new THREE.Color(0x1c6b31);
+      updateQuest();
+      updateHotbar();
+      state.running = false;
+      winModal.classList.add('show');
     }
 
     function interact() {
@@ -684,81 +697,64 @@
       if (near.type === 'npc') {
         if (!state.questStarted) {
           state.questStarted = true;
-          state.message = 'Eldon a perdu 3 cristaux. Explore le monde, ouvre les coffres, puis active le portail.';
+          state.message = 'Eldon a perdu 3 cristaux. Retrouve-les pour sécuriser ton terrain de construction.';
         } else if (state.crystalsFound < 3) {
           state.message = `Eldon : il manque encore ${3 - state.crystalsFound} cristal${3 - state.crystalsFound > 1 ? 'ux' : ''}.`;
+        } else if (!state.buildModeUnlocked) {
+          state.message = 'Eldon : parfait. Utilise maintenant les cristaux sur le totem.';
         } else {
-          state.message = 'Eldon : tout est prêt. Active le portail.';
+          state.message = 'Eldon : tu peux maintenant construire des murs, des plateformes et des maisons.';
         }
         updateQuest();
         return;
       }
-      if (near.type === 'chest') {
-        openChest(near);
-        return;
-      }
-      if (near.type === 'portal') {
+      if (near.type === 'chest') { openChest(near); return; }
+      if (near.type === 'totem') {
         if (state.crystalsFound < 3) {
-          state.message = 'Le portail manque encore d’énergie. Trouve les 3 cristaux.';
+          state.message = 'Le totem manque encore d’énergie. Trouve les 3 cristaux.';
           updateQuest();
           return;
         }
-        state.questCompleted = true;
-        state.message = 'Le portail est réactivé. Le village est sauvé.';
-        portal.core.material.color.set(0x7d5cff);
-        portal.core.material.emissive.set(0x40208b);
-        updateQuest();
-        state.running = false;
-        winModal.classList.add('show');
+        if (!state.buildModeUnlocked) unlockBuildMode();
       }
     }
 
-    function collides(nextX, nextZ) {
+    function collides(nextX, nextZ, nextY = 0) {
       const box = new THREE.Box3(
-        new THREE.Vector3(nextX - playerState.radius, 0, nextZ - playerState.radius),
-        new THREE.Vector3(nextX + playerState.radius, playerState.height, nextZ + playerState.radius)
+        new THREE.Vector3(nextX - playerState.radius, nextY, nextZ - playerState.radius),
+        new THREE.Vector3(nextX + playerState.radius, nextY + playerState.height, nextZ + playerState.radius)
       );
-      for (const ob of obstacles) {
-        if (box.intersectsBox(ob)) return true;
-      }
+      for (const ob of obstacles) if (box.intersectsBox(ob)) return true;
       if (nextX < -worldHalf + 1 || nextX > worldHalf - 1 || nextZ < -worldHalf + 1 || nextZ > worldHalf - 1) return true;
       return false;
     }
 
     function handleMovement(dt) {
-      let moveX = 0;
-      let moveZ = 0;
+      let moveX = 0, moveZ = 0;
       if (input.up) moveZ -= 1;
       if (input.down) moveZ += 1;
       if (input.left) moveX -= 1;
       if (input.right) moveX += 1;
-
-      if (isTouch && input.joyActive) {
-        moveX += input.joyX;
-        moveZ += input.joyY;
-      }
+      if (isTouch && input.joyActive) { moveX += input.joyX; moveZ += input.joyY; }
 
       const len = Math.hypot(moveX, moveZ);
       const speed = 9;
       if (len > 0.001) {
-        moveX /= len;
-        moveZ /= len;
-
+        moveX /= len; moveZ /= len;
         playerState.heading = Math.atan2(moveX, moveZ);
         player.rotation.y = playerState.heading;
-
         const nextX = player.position.x + moveX * speed * dt;
         const nextZ = player.position.z + moveZ * speed * dt;
-
-        if (!collides(nextX, player.position.z)) player.position.x = nextX;
-        if (!collides(player.position.x, nextZ)) player.position.z = nextZ;
-
-        playerState.bob += dt * 12;
-        player.children[2].rotation.x = Math.sin(playerState.bob) * 0.55;
-        player.children[3].rotation.x = -Math.sin(playerState.bob) * 0.55;
+        if (!collides(nextX, player.position.z, player.position.y)) player.position.x = nextX;
+        if (!collides(player.position.x, nextZ, player.position.y)) player.position.z = nextZ;
+        playerState.bob += dt * 11;
+        const swing = Math.sin(playerState.bob) * 0.7;
+        player.userData.parts.legL.rotation.x = swing;
+        player.userData.parts.legR.rotation.x = -swing;
+        player.userData.parts.armL.rotation.x = -swing * 0.85;
+        player.userData.parts.armR.rotation.x = swing * 0.85;
       } else {
-        player.children[2].rotation.x *= 0.78;
-        player.children[3].rotation.x *= 0.78;
+        ['legL','legR','armL','armR'].forEach(k => player.userData.parts[k].rotation.x *= 0.78);
       }
     }
 
@@ -779,34 +775,74 @@
     function updateCamera(dt) {
       const dir = new THREE.Vector3(Math.sin(player.rotation.y), 0, Math.cos(player.rotation.y));
       const desired = new THREE.Vector3(
-        player.position.x - dir.x * 8,
-        player.position.y + 6.8,
-        player.position.z - dir.z * 8
+        player.position.x - dir.x * playerState.cameraDistance,
+        player.position.y + 7.2,
+        player.position.z - dir.z * playerState.cameraDistance
       );
       camera.position.lerp(desired, 1 - Math.pow(0.001, dt));
-      const look = new THREE.Vector3(player.position.x, player.position.y + 2.3, player.position.z);
-      camera.lookAt(look);
+      camera.lookAt(new THREE.Vector3(player.position.x, player.position.y + 2.6, player.position.z));
     }
 
-    function animateCrystals(dt) {
-      for (let i = crystals.length - 1; i >= 0; i--) {
-        const c = crystals[i];
+    function animateFx(dt) {
+      for (let i = crystalsFx.length - 1; i >= 0; i--) {
+        const c = crystalsFx[i];
         c.t += dt * 4;
         c.life -= dt;
         c.mesh.rotation.y += dt * 4;
         c.mesh.position.y += Math.sin(c.t) * 0.03;
-        if (c.life <= 0) {
-          scene.remove(c.mesh);
-          crystals.splice(i, 1);
-        }
+        if (c.life <= 0) { scene.remove(c.mesh); crystalsFx.splice(i, 1); }
+      }
+      if (state.buildModeUnlocked) {
+        totem.core.rotation.y += dt * 0.5;
+        totem.core.material.emissiveIntensity = 0.7 + Math.sin(performance.now() * 0.008) * 0.2;
       }
     }
 
-    function animatePortal(dt) {
-      if (state.questCompleted) {
-        portal.core.rotation.y += dt * 0.6;
-        portal.core.material.emissiveIntensity = 0.8 + Math.sin(performance.now() * 0.008) * 0.2;
+    function getPlacementTarget() {
+      if (!state.buildModeUnlocked) return null;
+      const origin = camera.position.clone();
+      const target = new THREE.Vector3(player.position.x, player.position.y + 2.4, player.position.z).sub(camera.position).normalize();
+      raycaster.set(origin, target);
+      const intersects = raycaster.intersectObjects(buildableBlocks, false);
+      if (!intersects.length) return null;
+      const hit = intersects[0];
+      const normal = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
+      const pos = hit.object.position.clone().add(normal.multiplyScalar(tileSize));
+      pos.x = Math.round(pos.x / tileSize) * tileSize;
+      pos.y = Math.round(pos.y / tileSize) * tileSize;
+      pos.z = Math.round(pos.z / tileSize) * tileSize;
+      if (pos.y < 1) pos.y = 1;
+      return pos;
+    }
+
+    function placeBlock() {
+      if (!state.buildModeUnlocked) return;
+      const type = state.selectedBlock;
+      const def = blockDefs[type];
+      if (!def?.placeable) return;
+      if ((state.inventory[type] ?? 0) <= 0) {
+        state.message = `Tu n’as plus assez de blocs ${def.label.toLowerCase()}.`;
+        updateQuest();
+        return;
       }
+      const pos = getPlacementTarget();
+      if (!pos) {
+        state.message = 'Vise une face de bloc existant pour ajouter un nouveau bloc.';
+        updateQuest();
+        return;
+      }
+      const k = keyFor(pos.x, pos.y, pos.z);
+      if (blockMap.has(k)) return;
+      if (distance2D({ x: pos.x, z: pos.z }, player.position) < 1.8 && Math.abs(pos.y - player.position.y) < 3.5) {
+        state.message = 'Tu es trop près pour poser ce bloc ici.';
+        updateQuest();
+        return;
+      }
+      makePlacedBlock(pos.x, pos.y, pos.z, type, true);
+      state.inventory[type] -= 1;
+      state.message = `Bloc ${def.label.toLowerCase()} posé. Continue à agrandir ton espace.`;
+      updateQuest();
+      updateHotbar();
     }
 
     function tick() {
@@ -816,36 +852,24 @@
         handleJump(dt);
       }
       updateCamera(dt);
-      animateCrystals(dt);
-      animatePortal(dt);
+      animateFx(dt);
       showHint();
       renderer.render(scene, camera);
       requestAnimationFrame(tick);
     }
 
-    function resetGame() {
-      state.running = false;
-      state.questStarted = false;
-      state.crystalsFound = 0;
-      state.questCompleted = false;
-      state.message = 'Parle au villageois près du portail pour commencer.';
-      state.inventory = { crystal: 0, wood: 0, food: 0 };
-      player.position.set(-22, 0, 0);
-      player.rotation.y = 0;
-      playerState.velocityY = 0;
-      playerState.onGround = true;
-      playerState.heading = 0;
-      playerState.bob = 0;
-      [chest1, chest2, chest3].forEach(ch => {
-        ch.opened = false;
-        ch.group.children[1].rotation.x = 0;
-      });
-      portal.core.material.color.set(0x1d2231);
-      portal.core.material.emissive.set(0x000000);
-      winModal.classList.remove('show');
-      startModal.classList.add('show');
-      updateQuest();
-      updateHotbar();
+    function resetJoystick() {
+      input.joyActive = false; input.joyX = 0; input.joyY = 0;
+      joystickKnob.style.left = '36px'; joystickKnob.style.top = '36px';
+    }
+    function updateJoystick(clientX, clientY) {
+      const rect = joystickBase.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+      let dx = clientX - cx, dy = clientY - cy;
+      const max = 36, dist = Math.hypot(dx, dy);
+      if (dist > max) { dx = (dx / dist) * max; dy = (dy / dist) * max; }
+      input.joyX = dx / max; input.joyY = dy / max;
+      joystickKnob.style.left = `${36 + dx}px`; joystickKnob.style.top = `${36 + dy}px`;
     }
 
     function setKey(code, value) {
@@ -859,103 +883,31 @@
     window.addEventListener('keydown', (e) => {
       setKey(e.code, true);
       if (e.code === 'KeyE' && state.running) interact();
+      if (e.code === 'KeyF' && state.running) placeBlock();
+      const keyMap = { Digit1: 'grass', Digit2: 'dirt', Digit3: 'stone', Digit4: 'woodBlock' };
+      if (keyMap[e.code]) { state.selectedBlock = keyMap[e.code]; updateHotbar(); updateQuest(); }
     });
+    window.addEventListener('keyup', (e) => setKey(e.code, false));
 
-    window.addEventListener('keyup', (e) => {
-      setKey(e.code, false);
-    });
+    startBtn.addEventListener('click', () => { startModal.classList.remove('show'); state.running = true; });
+    continueBtn.addEventListener('click', () => { winModal.classList.remove('show'); state.running = true; });
 
-    startBtn.addEventListener('click', () => {
-      startModal.classList.remove('show');
-      state.running = true;
-    });
+    renderer.domElement.addEventListener('click', () => { if (state.running && state.buildModeUnlocked && !isTouch) placeBlock(); });
 
-    restartBtn.addEventListener('click', resetGame);
+    joystickBase.addEventListener('touchstart', (e) => { e.preventDefault(); input.joyActive = true; const t = e.touches[0]; updateJoystick(t.clientX, t.clientY); }, { passive: false });
+    joystickBase.addEventListener('touchmove', (e) => { e.preventDefault(); if (!input.joyActive) return; const t = e.touches[0]; updateJoystick(t.clientX, t.clientY); }, { passive: false });
+    joystickBase.addEventListener('touchend', (e) => { e.preventDefault(); resetJoystick(); }, { passive: false });
+    joystickBase.addEventListener('touchcancel', (e) => { e.preventDefault(); resetJoystick(); }, { passive: false });
+    joystickBase.addEventListener('mousedown', (e) => { e.preventDefault(); input.joyActive = true; updateJoystick(e.clientX, e.clientY); });
+    window.addEventListener('mousemove', (e) => { if (!input.joyActive) return; updateJoystick(e.clientX, e.clientY); });
+    window.addEventListener('mouseup', () => { if (input.joyActive) resetJoystick(); });
 
-    function updateJoystick(clientX, clientY) {
-      const rect = joystickBase.getBoundingClientRect();
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-      let dx = clientX - cx;
-      let dy = clientY - cy;
-      const max = 36;
-      const dist = Math.hypot(dx, dy);
-      if (dist > max) {
-        dx = (dx / dist) * max;
-        dy = (dy / dist) * max;
-      }
-      input.joyX = dx / max;
-      input.joyY = dy / max;
-      joystickKnob.style.left = `${36 + dx}px`;
-      joystickKnob.style.top = `${36 + dy}px`;
-    }
-
-    function resetJoystick() {
-      input.joyActive = false;
-      input.joyX = 0;
-      input.joyY = 0;
-      joystickKnob.style.left = '36px';
-      joystickKnob.style.top = '36px';
-    }
-
-    joystickBase.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      input.joyActive = true;
-      const t = e.touches[0];
-      updateJoystick(t.clientX, t.clientY);
-    }, { passive: false });
-
-    joystickBase.addEventListener('touchmove', (e) => {
-      e.preventDefault();
-      if (!input.joyActive) return;
-      const t = e.touches[0];
-      updateJoystick(t.clientX, t.clientY);
-    }, { passive: false });
-
-    joystickBase.addEventListener('touchend', (e) => {
-      e.preventDefault();
-      resetJoystick();
-    }, { passive: false });
-
-    joystickBase.addEventListener('touchcancel', (e) => {
-      e.preventDefault();
-      resetJoystick();
-    }, { passive: false });
-
-    joystickBase.addEventListener('mousedown', (e) => {
-      e.preventDefault();
-      input.joyActive = true;
-      updateJoystick(e.clientX, e.clientY);
-    });
-
-    window.addEventListener('mousemove', (e) => {
-      if (!input.joyActive) return;
-      updateJoystick(e.clientX, e.clientY);
-    });
-
-    window.addEventListener('mouseup', () => {
-      if (input.joyActive) resetJoystick();
-    });
-
-    actionBtn.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      if (state.running) interact();
-    }, { passive: false });
-    actionBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      if (state.running) interact();
-    });
-
-    jumpBtn.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      input.jump = true;
-      setTimeout(() => input.jump = false, 120);
-    }, { passive: false });
-    jumpBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      input.jump = true;
-      setTimeout(() => input.jump = false, 120);
-    });
+    actionBtn.addEventListener('touchstart', (e) => { e.preventDefault(); if (state.running) interact(); }, { passive: false });
+    actionBtn.addEventListener('click', (e) => { e.preventDefault(); if (state.running) interact(); });
+    jumpBtn.addEventListener('touchstart', (e) => { e.preventDefault(); input.jump = true; setTimeout(() => input.jump = false, 120); }, { passive: false });
+    jumpBtn.addEventListener('click', (e) => { e.preventDefault(); input.jump = true; setTimeout(() => input.jump = false, 120); });
+    placeBtn.addEventListener('touchstart', (e) => { e.preventDefault(); if (state.running) placeBlock(); }, { passive: false });
+    placeBtn.addEventListener('click', (e) => { e.preventDefault(); if (state.running) placeBlock(); });
 
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
