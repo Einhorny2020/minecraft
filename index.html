@@ -2,120 +2,118 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Block Quest</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Block Quest 3D</title>
   <style>
     * { box-sizing: border-box; }
     html, body {
       margin: 0;
-      padding: 0;
       width: 100%;
       height: 100%;
       overflow: hidden;
       font-family: Arial, Helvetica, sans-serif;
-      background: #10151c;
+      background: #87ceeb;
       color: #fff;
+      touch-action: none;
     }
 
-    body {
-      display: flex;
-      align-items: stretch;
-      justify-content: stretch;
-    }
-
-    #gameWrap {
+    #game {
       position: relative;
       width: 100vw;
       height: 100vh;
       overflow: hidden;
-      background:
-        linear-gradient(to bottom, #7fd3ff 0%, #9be2ff 45%, #dff8ff 46%, #7ddf72 46%, #69c25f 100%);
+      background: linear-gradient(to bottom, #8ed6ff 0%, #cdefff 55%, #7bc96f 56%, #5ba94f 100%);
     }
 
     canvas {
       display: block;
       width: 100%;
       height: 100%;
-      image-rendering: pixelated;
-      image-rendering: crisp-edges;
     }
 
-    .hud {
+    .panel {
       position: absolute;
-      left: 18px;
-      top: 18px;
-      width: min(360px, calc(100vw - 36px));
-      background: rgba(17, 24, 39, 0.82);
-      border: 3px solid rgba(255, 255, 255, 0.12);
-      border-radius: 14px;
-      padding: 14px;
-      backdrop-filter: blur(6px);
-      box-shadow: 0 10px 25px rgba(0,0,0,0.25);
-      z-index: 10;
-      max-height: min(46vh, 320px);
+      left: 14px;
+      top: 14px;
+      width: min(360px, calc(100vw - 28px));
+      background: rgba(15, 23, 42, 0.82);
+      border: 2px solid rgba(255,255,255,0.12);
+      border-radius: 16px;
+      padding: 12px;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 12px 28px rgba(0,0,0,0.25);
+      z-index: 20;
+      max-height: min(40vh, 290px);
       overflow: auto;
     }
 
-    .hud h1 {
-      margin: 0 0 10px 0;
-      font-size: 20px;
-      letter-spacing: 0.5px;
-    }
-
-    .hud p {
+    .panel h1 {
       margin: 0 0 8px 0;
-      font-size: 14px;
-      line-height: 1.4;
-      color: #e8eef7;
+      font-size: 19px;
     }
 
-    .hud .small {
-      font-size: 12px;
-      color: #c3d1e4;
+    .panel p {
+      margin: 0 0 6px 0;
+      font-size: 13px;
+      line-height: 1.35;
+      color: #e8eef8;
     }
 
-    .questStatus {
-      margin-top: 10px;
+    .quest {
+      margin-top: 8px;
       padding: 10px;
+      border-radius: 12px;
       background: rgba(255,255,255,0.08);
-      border-radius: 10px;
-      font-size: 14px;
+      font-size: 13px;
       line-height: 1.4;
     }
 
-    .inventory {
+    .interact {
+      position: absolute;
+      right: 14px;
+      top: 14px;
+      max-width: 280px;
+      background: rgba(15, 23, 42, 0.82);
+      border: 2px solid rgba(255,255,255,0.12);
+      border-radius: 14px;
+      padding: 10px 12px;
+      font-size: 13px;
+      line-height: 1.35;
+      z-index: 20;
+      display: none;
+    }
+
+    .hotbar {
       position: absolute;
       left: 50%;
       bottom: 18px;
       transform: translateX(-50%);
       display: flex;
       gap: 8px;
-      z-index: 10;
-      padding: 10px 14px;
-      background: rgba(17, 24, 39, 0.82);
-      border-radius: 14px;
-      border: 3px solid rgba(255,255,255,0.12);
-      box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+      padding: 8px 10px;
+      background: rgba(15, 23, 42, 0.82);
+      border: 2px solid rgba(255,255,255,0.12);
+      border-radius: 16px;
+      z-index: 20;
     }
 
     .slot {
-      width: 58px;
-      height: 58px;
+      width: 56px;
+      height: 56px;
+      border-radius: 12px;
       background: rgba(255,255,255,0.08);
-      border: 3px solid rgba(255,255,255,0.15);
-      border-radius: 10px;
+      border: 2px solid rgba(255,255,255,0.12);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
+      font-size: 10px;
+      color: #dce6f5;
       position: relative;
-      font-size: 11px;
-      color: #dfe8f6;
     }
 
     .slot strong {
-      font-size: 22px;
-      line-height: 1;
+      font-size: 20px;
       margin-bottom: 4px;
     }
 
@@ -128,796 +126,788 @@
       color: #fff;
     }
 
-    .centerMessage {
+    .modal {
       position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      min-width: min(560px, calc(100vw - 32px));
-      max-width: 90vw;
-      background: rgba(15, 23, 42, 0.92);
-      border: 4px solid rgba(255,255,255,0.14);
-      border-radius: 18px;
-      padding: 22px;
-      text-align: center;
-      z-index: 20;
+      inset: 0;
       display: none;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.38);
+      z-index: 30;
+      padding: 16px;
     }
 
-    .centerMessage.show { display: block; }
+    .modal.show { display: flex; }
 
-    .centerMessage h2 {
+    .card {
+      width: min(620px, 100%);
+      background: rgba(15, 23, 42, 0.94);
+      border: 2px solid rgba(255,255,255,0.12);
+      border-radius: 20px;
+      padding: 24px;
+      text-align: center;
+      box-shadow: 0 24px 70px rgba(0,0,0,0.4);
+    }
+
+    .card h2 {
       margin: 0 0 12px 0;
       font-size: 28px;
     }
 
-    .centerMessage p {
+    .card p {
       margin: 10px 0;
       font-size: 16px;
       line-height: 1.5;
       color: #edf4ff;
     }
 
-    .btnRow {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-top: 16px;
-    }
-
     button {
       border: none;
-      border-radius: 12px;
+      border-radius: 14px;
       padding: 12px 18px;
       font-size: 15px;
       font-weight: bold;
       cursor: pointer;
-      background: linear-gradient(135deg, #57d163, #2ea043);
       color: white;
-      box-shadow: 0 8px 18px rgba(46,160,67,0.35);
+      background: linear-gradient(135deg, #57d163, #2ea043);
+      box-shadow: 0 10px 24px rgba(46,160,67,0.35);
     }
 
     button.secondary {
       background: linear-gradient(135deg, #4d7dff, #3562e2);
-      box-shadow: 0 8px 18px rgba(53,98,226,0.35);
+      box-shadow: 0 10px 24px rgba(53,98,226,0.35);
     }
 
-    .interactHint {
+    #mobileUI {
       position: absolute;
-      right: 18px;
-      top: 18px;
-      max-width: 320px;
-      z-index: 10;
-      padding: 12px 14px;
-      background: rgba(17, 24, 39, 0.82);
-      border: 3px solid rgba(255,255,255,0.12);
-      border-radius: 14px;
-      font-size: 14px;
-      line-height: 1.45;
+      inset: 0;
+      pointer-events: none;
+      z-index: 21;
       display: none;
     }
 
-    .footerNote {
+    #joystickBase {
       position: absolute;
+      left: 18px;
+      bottom: 130px;
+      width: 132px;
+      height: 132px;
+      border-radius: 50%;
+      background: rgba(15, 23, 42, 0.28);
+      border: 2px solid rgba(255,255,255,0.12);
+      box-shadow: inset 0 0 24px rgba(0,0,0,0.2);
+      pointer-events: auto;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    #joystickKnob {
+      position: absolute;
+      left: 36px;
+      top: 36px;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: rgba(15, 23, 42, 0.92);
+      border: 2px solid rgba(255,255,255,0.16);
+      box-shadow: 0 10px 22px rgba(0,0,0,0.28);
+    }
+
+    .roundBtn {
+      position: absolute;
+      width: 82px;
+      height: 82px;
+      border-radius: 50%;
+      pointer-events: auto;
+      touch-action: manipulation;
+      border: 2px solid rgba(255,255,255,0.14);
+      background: linear-gradient(135deg, #4d7dff, #3562e2);
+      color: #fff;
+      font-size: 28px;
+      font-weight: bold;
+      box-shadow: 0 12px 24px rgba(53,98,226,0.35);
+    }
+
+    #actionBtn {
       right: 18px;
-      bottom: 18px;
-      z-index: 10;
-      background: rgba(17, 24, 39, 0.82);
-      border: 3px solid rgba(255,255,255,0.12);
-      border-radius: 14px;
-      padding: 10px 12px;
-      font-size: 12px;
-      color: #d5e0ef;
+      bottom: 132px;
+    }
+
+    #jumpBtn {
+      right: 112px;
+      bottom: 58px;
+      background: linear-gradient(135deg, #ffb347, #ff8f1f);
+      box-shadow: 0 12px 24px rgba(255,143,31,0.35);
     }
 
     @media (max-width: 860px) {
-      .hud {
+      .panel {
         width: calc(100vw - 24px);
         left: 12px;
         top: 12px;
-        padding: 10px 12px;
-        max-height: 124px;
-        overflow: auto;
+        padding: 10px;
+        max-height: 112px;
       }
-      .hud h1 {
-        font-size: 16px;
-        margin-bottom: 6px;
-      }
-      .hud p {
-        font-size: 12px;
-        margin-bottom: 4px;
-      }
-      .questStatus {
-        margin-top: 6px;
-        padding: 8px;
-        font-size: 12px;
-      }
-      .interactHint {
+      .panel h1 { font-size: 16px; margin-bottom: 5px; }
+      .panel p { font-size: 11px; margin-bottom: 4px; }
+      .quest { font-size: 11px; padding: 8px; }
+      .interact {
         right: 12px;
-        top: auto;
-        bottom: 146px;
+        top: 130px;
         max-width: calc(100vw - 24px);
-        font-size: 12px;
+        font-size: 11px;
         padding: 8px 10px;
       }
-      .footerNote {
-        display: none;
-      }
-      .inventory {
+      .hotbar {
         left: auto;
         right: 12px;
-        bottom: 18px;
+        bottom: 12px;
         transform: none;
         gap: 6px;
         padding: 8px;
       }
       .slot {
-        width: 46px;
-        height: 46px;
-        border-radius: 8px;
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
       }
-      .slot strong {
-        font-size: 16px;
-        margin-bottom: 2px;
-      }
-      .slot span {
-        font-size: 9px;
-      }
-    }
-
-    .mc-btn, .mc-action {
-      position: absolute;
-      width: 54px;
-      height: 54px;
-      border: none;
-      border-radius: 14px;
-      background: rgba(17,24,39,0.82);
-      color: #fff;
-      font-size: 24px;
-      font-weight: bold;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.25);
-      border: 2px solid rgba(255,255,255,0.14);
-      pointer-events: auto;
-      touch-action: manipulation;
-      user-select: none;
-      -webkit-user-select: none;
-    }
-
-    .mc-action {
-      position: relative;
-      width: 78px;
-      height: 78px;
-      border-radius: 50%;
-      font-size: 28px;
-      background: linear-gradient(135deg, #4d7dff, #3562e2);
-    }
-      .interactHint { right: 12px; top: auto; bottom: 98px; max-width: calc(100vw - 24px); }
-      .footerNote { left: 12px; right: 12px; bottom: 12px; }
-      .inventory { bottom: 74px; }
+      .slot strong { font-size: 16px; margin-bottom: 2px; }
+      .slot span { font-size: 9px; }
+      .card { padding: 18px; }
+      .card h2 { font-size: 22px; }
+      .card p { font-size: 14px; }
     }
   </style>
 </head>
 <body>
-  <div id="gameWrap">
-    <canvas id="gameCanvas"></canvas>
-
-    <div class="hud">
-      <h1>Block Quest</h1>
-      <p><strong>Déplacement :</strong> ZQSD / WASD ou flèches</p>
-      <p><strong>Interaction :</strong> E</p>
-      <p><strong>Objectif :</strong> retrouver les <strong>3 cristaux</strong> pour réparer le portail du village.</p>
-      <div class="questStatus" id="questStatus"></div>
-      <p class="small">Page unique <strong>index.html</strong>, prête pour un déploiement simple sur Vercel.</p>
+  <div id="game">
+    <div class="panel">
+      <h1>Block Quest 3D</h1>
+      <p><strong>Desktop :</strong> ZQSD / WASD, E pour interagir, espace pour sauter.</p>
+      <p><strong>Mobile :</strong> joystick à gauche, <strong>E</strong> pour interagir, <strong>↑</strong> pour sauter.</p>
+      <div class="quest" id="questText"></div>
     </div>
 
-    <div class="interactHint" id="interactHint"></div>
+    <div class="interact" id="interactHint"></div>
 
-    <div class="inventory" id="inventory"></div>
+    <div class="hotbar" id="hotbar"></div>
 
-    <div class="centerMessage show" id="startModal">
-      <h2>Bienvenue dans Block Quest</h2>
-      <p>Tu incarnes un aventurier dans un univers <strong>inspiré de Minecraft</strong>. Explore la map, parle au villageois, récupère les cristaux perdus et réactive le portail.</p>
-      <p>La quête est simple mais déjà jouable : déplacement, collecte, interaction, progression, écran de victoire.</p>
-      <div class="btnRow">
-        <button id="startBtn">Commencer l’aventure</button>
+    <div id="mobileUI">
+      <div id="joystickBase">
+        <div id="joystickKnob"></div>
+      </div>
+      <button class="roundBtn" id="actionBtn">E</button>
+      <button class="roundBtn" id="jumpBtn">↑</button>
+    </div>
+
+    <div class="modal show" id="startModal">
+      <div class="card">
+        <h2>Bienvenue dans Block Quest 3D</h2>
+        <p>Tu es dans un monde <strong>3D voxel inspiré de Minecraft</strong>. Explore la map, trouve les trois cristaux et réactive le portail du village.</p>
+        <p>Tout tient dans un seul <strong>index.html</strong>, prêt à être déployé sur Vercel.</p>
+        <button id="startBtn">Lancer la quête</button>
       </div>
     </div>
 
-    <div class="centerMessage" id="winModal">
-      <h2>Quête terminée</h2>
-      <p>Bravo, tu as récupéré tous les cristaux et réactivé le portail du village.</p>
-      <p>Cette base peut ensuite être enrichie avec : ennemis, crafting, PNJ supplémentaires, collisions plus complexes, sons, sauvegarde et plusieurs quêtes.</p>
-      <div class="btnRow">
+    <div class="modal" id="winModal">
+      <div class="card">
+        <h2>Victoire</h2>
+        <p>Tu as récupéré tous les cristaux et réactivé le portail.</p>
+        <p>Cette base peut maintenant évoluer vers un vrai mini-jeu complet.</p>
         <button class="secondary" id="restartBtn">Rejouer</button>
       </div>
     </div>
-
-    <div class="footerNote">
-      Astuce : approche-toi d’un coffre, du villageois ou du portail puis appuie sur <strong>E</strong>.
-    </div>
-
-    <div id="mobileControls" style="position:absolute; inset:0; pointer-events:none; z-index:12; display:none;">
-      <div id="joystickBase" style="position:absolute; left:16px; bottom:20px; width:128px; height:128px; border-radius:50%; background:rgba(17,24,39,0.32); border:2px solid rgba(255,255,255,0.12); box-shadow: inset 0 0 20px rgba(0,0,0,0.18); pointer-events:auto; touch-action:none; user-select:none; -webkit-user-select:none;">
-        <div id="joystickKnob" style="position:absolute; left:34px; top:34px; width:60px; height:60px; border-radius:50%; background:rgba(17,24,39,0.88); border:2px solid rgba(255,255,255,0.16); box-shadow:0 10px 20px rgba(0,0,0,0.28);"></div>
-      </div>
-      <div style="position:absolute; right:18px; bottom:96px; pointer-events:none;">
-        <button class="mc-action" id="btnAction">E</button>
-      </div>
-    </div>
-  </div>
   </div>
 
-  <script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    const questStatusEl = document.getElementById('questStatus');
-    const inventoryEl = document.getElementById('inventory');
-    const interactHintEl = document.getElementById('interactHint');
+  <script type="module">
+    import * as THREE from 'https://unpkg.com/three@0.161.0/build/three.module.js';
+
+    const game = document.getElementById('game');
+    const questText = document.getElementById('questText');
+    const hotbar = document.getElementById('hotbar');
+    const interactHint = document.getElementById('interactHint');
+    const mobileUI = document.getElementById('mobileUI');
+    const joystickBase = document.getElementById('joystickBase');
+    const joystickKnob = document.getElementById('joystickKnob');
+    const actionBtn = document.getElementById('actionBtn');
+    const jumpBtn = document.getElementById('jumpBtn');
     const startModal = document.getElementById('startModal');
     const winModal = document.getElementById('winModal');
     const startBtn = document.getElementById('startBtn');
     const restartBtn = document.getElementById('restartBtn');
-    const mobileControls = document.getElementById('mobileControls');
-    const joystickBase = document.getElementById('joystickBase');
-    const joystickKnob = document.getElementById('joystickKnob');
-    const btnAction = document.getElementById('btnAction');
 
-    let W = 0;
-    let H = 0;
-    const TILE = 48;
-    const WORLD_COLS = 34;
-    const WORLD_ROWS = 22;
-    const WORLD_W = WORLD_COLS * TILE;
-    const WORLD_H = WORLD_ROWS * TILE;
+    const isTouch = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+    if (isTouch) mobileUI.style.display = 'block';
 
-    let running = false;
-    const keys = {};
-    const isTouchDevice = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
-    let joystickActive = false;
-    let joystickVector = { x: 0, y: 0 };
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x8ed6ff);
+    scene.fog = new THREE.Fog(0x8ed6ff, 60, 145);
+
+    const camera = new THREE.PerspectiveCamera(68, window.innerWidth / window.innerHeight, 0.1, 500);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    game.appendChild(renderer.domElement);
+
+    const hemi = new THREE.HemisphereLight(0xffffff, 0x6c8a4d, 1.15);
+    scene.add(hemi);
+
+    const sun = new THREE.DirectionalLight(0xffffff, 1.2);
+    sun.position.set(40, 60, 20);
+    sun.castShadow = true;
+    sun.shadow.mapSize.width = 2048;
+    sun.shadow.mapSize.height = 2048;
+    sun.shadow.camera.left = -90;
+    sun.shadow.camera.right = 90;
+    sun.shadow.camera.top = 90;
+    sun.shadow.camera.bottom = -90;
+    scene.add(sun);
+
+    const worldSize = 30;
+    const tileSize = 2;
+    const worldHalf = (worldSize * tileSize) / 2;
+    const obstacles = [];
+    const interactables = [];
+    const entities = [];
+    const crystals = [];
 
     const state = {
+      running: false,
       questStarted: false,
       crystalsFound: 0,
       questCompleted: false,
-      message: "Parle au villageois près du portail pour lancer ta mission.",
-      inventory: {
-        crystal: 0,
-        wood: 0,
-        food: 0
+      message: 'Parle au villageois près du portail pour commencer.',
+      inventory: { crystal: 0, wood: 0, food: 0 }
+    };
+
+    const input = {
+      up: false,
+      down: false,
+      left: false,
+      right: false,
+      jump: false,
+      interact: false,
+      joyX: 0,
+      joyY: 0,
+      joyActive: false
+    };
+
+    const clock = new THREE.Clock();
+
+    function makeBox(w, h, d, color) {
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(w, h, d),
+        new THREE.MeshLambertMaterial({ color })
+      );
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      return mesh;
+    }
+
+    function addObstacle(mesh, padding = 0.35) {
+      const box = new THREE.Box3().setFromObject(mesh);
+      box.min.x -= padding; box.min.z -= padding;
+      box.max.x += padding; box.max.z += padding;
+      obstacles.push(box);
+    }
+
+    function makeGround() {
+      const group = new THREE.Group();
+      const grass1 = new THREE.MeshLambertMaterial({ color: 0x6fbe63 });
+      const grass2 = new THREE.MeshLambertMaterial({ color: 0x68b75d });
+      const dirt = new THREE.MeshLambertMaterial({ color: 0x8b5a2b });
+
+      for (let x = 0; x < worldSize; x++) {
+        for (let z = 0; z < worldSize; z++) {
+          const top = new THREE.Mesh(new THREE.BoxGeometry(tileSize, 1.2, tileSize), (x + z) % 2 === 0 ? grass1 : grass2);
+          top.position.set(x * tileSize - worldHalf + tileSize / 2, -0.6, z * tileSize - worldHalf + tileSize / 2);
+          top.receiveShadow = true;
+          group.add(top);
+
+          const side = new THREE.Mesh(new THREE.BoxGeometry(tileSize, 0.28, tileSize), dirt);
+          side.position.set(top.position.x, -1.34, top.position.z);
+          side.receiveShadow = true;
+          group.add(side);
+        }
       }
-    };
+      scene.add(group);
+    }
 
-    const player = {
-      x: 5 * TILE,
-      y: 8 * TILE,
-      w: 30,
-      h: 38,
-      speed: 3.2,
-      dir: 'down'
-    };
+    function makeTree(x, z) {
+      const tree = new THREE.Group();
+      const trunk = makeBox(0.9, 3.2, 0.9, 0x7b4d25);
+      trunk.position.y = 1.6;
+      tree.add(trunk);
 
-    const npc = {
-      x: 8 * TILE,
-      y: 8 * TILE,
-      w: 34,
-      h: 38,
-      name: 'Eldon'
-    };
+      const leaf1 = makeBox(2.8, 2.2, 2.8, 0x2f8f3f);
+      leaf1.position.y = 3.8;
+      tree.add(leaf1);
+      const leaf2 = makeBox(2.2, 1.8, 2.2, 0x36a84c);
+      leaf2.position.y = 5.1;
+      tree.add(leaf2);
 
-    const portal = {
-      x: 10 * TILE,
-      y: 6 * TILE,
-      w: TILE * 2,
-      h: TILE * 3,
-      active: false
-    };
+      tree.position.set(x, 0, z);
+      scene.add(tree);
+      addObstacle(tree, 0.55);
+    }
 
-    const chests = [
-      { x: 23 * TILE, y: 4 * TILE, w: 38, h: 30, opened: false, reward: 'crystal', id: 1 },
-      { x: 28 * TILE, y: 16 * TILE, w: 38, h: 30, opened: false, reward: 'crystal', id: 2 },
-      { x: 4 * TILE, y: 18 * TILE, w: 38, h: 30, opened: false, reward: 'crystal', id: 3 }
-    ];
+    function makeRock(x, z, sx = 2, sy = 2, sz = 2) {
+      const rock = makeBox(sx, sy, sz, 0x8e8e8e);
+      rock.position.set(x, sy / 2 - 0.02, z);
+      scene.add(rock);
+      addObstacle(rock, 0.2);
+    }
 
-    const decorations = [];
-    const walls = [];
+    function makeWater(x, z, w, d) {
+      const water = new THREE.Mesh(
+        new THREE.BoxGeometry(w, 0.3, d),
+        new THREE.MeshLambertMaterial({ color: 0x49a6ff, transparent: true, opacity: 0.88 })
+      );
+      water.position.set(x, -0.38, z);
+      water.receiveShadow = true;
+      scene.add(water);
+    }
 
-    function addWall(col, row, cols = 1, rows = 1) {
-      walls.push({ x: col * TILE, y: row * TILE, w: cols * TILE, h: rows * TILE });
+    function makeFlower(x, z) {
+      const group = new THREE.Group();
+      const stem = makeBox(0.12, 0.9, 0.12, 0x2a8f3e);
+      stem.position.y = 0.45;
+      group.add(stem);
+      const top = makeBox(0.55, 0.32, 0.55, 0xff5fa8);
+      top.position.y = 0.95;
+      group.add(top);
+      group.position.set(x, 0, z);
+      scene.add(group);
+    }
+
+    function makePortal(x, z) {
+      const group = new THREE.Group();
+      const frameMat = 0x5f3a1f;
+      const left = makeBox(1, 6, 1, frameMat);
+      left.position.set(-1.8, 3, 0);
+      const right = makeBox(1, 6, 1, frameMat);
+      right.position.set(1.8, 3, 0);
+      const top = makeBox(4.6, 1, 1, frameMat);
+      top.position.set(0, 5.5, 0);
+      const core = new THREE.Mesh(
+        new THREE.BoxGeometry(2.8, 4.6, 0.35),
+        new THREE.MeshLambertMaterial({ color: 0x1d2231, emissive: 0x000000 })
+      );
+      core.position.set(0, 3, 0);
+      core.castShadow = true;
+      group.add(left, right, top, core);
+      group.position.set(x, 0, z);
+      scene.add(group);
+      addObstacle(group, 0.45);
+      return { group, core, x, z, type: 'portal' };
+    }
+
+    function makeChest(x, z, id) {
+      const group = new THREE.Group();
+      const base = makeBox(1.4, 0.8, 1, 0xb78148);
+      base.position.y = 0.4;
+      const lid = makeBox(1.4, 0.4, 1, 0x8e6b46);
+      lid.position.y = 1;
+      const lock = makeBox(0.18, 0.22, 0.12, 0xf4d35f);
+      lock.position.set(0, 0.8, 0.56);
+      group.add(base, lid, lock);
+      group.position.set(x, 0, z);
+      scene.add(group);
+      addObstacle(group, 0.15);
+      const obj = { group, x, z, id, opened: false, type: 'chest' };
+      interactables.push(obj);
+      return obj;
+    }
+
+    function makeCrystalMesh() {
+      const geom = new THREE.OctahedronGeometry(0.55, 0);
+      const mat = new THREE.MeshLambertMaterial({ color: 0x69e3ff, emissive: 0x155b6f });
+      const mesh = new THREE.Mesh(geom, mat);
+      mesh.castShadow = true;
+      return mesh;
+    }
+
+    function makeNPC(x, z) {
+      const npc = new THREE.Group();
+      const head = makeBox(0.9, 0.9, 0.9, 0xd6a77a);
+      head.position.y = 2.7;
+      const body = makeBox(1.1, 1.5, 0.8, 0x4f7bff);
+      body.position.y = 1.6;
+      const leg1 = makeBox(0.34, 1, 0.34, 0x68462b);
+      leg1.position.set(-0.22, 0.5, 0);
+      const leg2 = makeBox(0.34, 1, 0.34, 0x68462b);
+      leg2.position.set(0.22, 0.5, 0);
+      npc.add(head, body, leg1, leg2);
+      npc.position.set(x, 0, z);
+      scene.add(npc);
+      addObstacle(npc, 0.35);
+      const label = { group: npc, x, z, type: 'npc', name: 'Eldon' };
+      interactables.push(label);
+      return label;
+    }
+
+    function makePlayer() {
+      const group = new THREE.Group();
+      const head = makeBox(0.9, 0.9, 0.9, 0xf0c59a);
+      head.position.y = 2.7;
+      const body = makeBox(1.1, 1.5, 0.8, 0x36b0ff);
+      body.position.y = 1.6;
+      const leg1 = makeBox(0.34, 1, 0.34, 0x1c3d7a);
+      leg1.position.set(-0.22, 0.5, 0);
+      const leg2 = makeBox(0.34, 1, 0.34, 0x1c3d7a);
+      leg2.position.set(0.22, 0.5, 0);
+      group.add(head, body, leg1, leg2);
+      group.position.set(-22, 0, 0);
+      scene.add(group);
+      return group;
     }
 
     function buildWorld() {
-      walls.length = 0;
-      decorations.length = 0;
+      makeGround();
 
-      for (let c = 0; c < WORLD_COLS; c++) {
-        addWall(c, 0);
-        addWall(c, WORLD_ROWS - 1);
-      }
-      for (let r = 0; r < WORLD_ROWS; r++) {
-        addWall(0, r);
-        addWall(WORLD_COLS - 1, r);
-      }
+      [
+        [-24,-22],[-16,-20],[-8,-24],[6,-22],[18,-18],[24,-8],[22,10],[15,18],[2,22],[-12,20],[-22,14],[-25,2]
+      ].forEach(([x,z]) => makeTree(x, z));
 
-      addWall(14, 3, 1, 7);
-      addWall(15, 9, 4, 1);
-      addWall(21, 12, 1, 6);
-      addWall(8, 14, 7, 1);
-      addWall(18, 4, 5, 1);
-      addWall(4, 5, 1, 4);
+      [
+        [-10,-8, 6, 8], [18, 8, 8, 6]
+      ].forEach(([x,z,w,d]) => makeWater(x, z, w, d));
 
-      const treePositions = [
-        [3,3],[6,3],[11,4],[17,2],[24,3],[30,4],[26,8],[31,10],[3,13],[5,16],[10,18],[16,17],[24,18],[29,18]
-      ];
-      treePositions.forEach(([c, r]) => {
-        decorations.push({ type: 'tree', x: c * TILE, y: r * TILE });
-        addWall(c, r, 1, 1);
-      });
+      [
+        [-4,-14],[-2,-12],[4,-10],[12,14],[-18,10],[10,22],[-8,18],[18,-2]
+      ].forEach(([x,z]) => makeFlower(x, z));
 
-      const waterZones = [
-        { c: 24, r: 12, cols: 5, rows: 3 },
-        { c: 2, r: 9, cols: 2, rows: 3 }
-      ];
-      waterZones.forEach(z => decorations.push({ type: 'water', x: z.c * TILE, y: z.r * TILE, cols: z.cols, rows: z.rows }));
-
-      const flowers = [
-        [7,10],[12,11],[19,15],[27,6],[9,19],[25,9],[22,19],[30,15],[13,6]
-      ];
-      flowers.forEach(([c,r]) => decorations.push({ type: 'flower', x: c*TILE, y: r*TILE }));
+      [
+        [-2,-2, 3, 4, 18], [10,-14, 4, 4, 0], [16,16, 4, 5, 0], [-20,18, 5, 5, 0], [22,-22, 3, 3, 0], [-24,-8, 4, 3, 0]
+      ].forEach(([x,z,sx,sy,sz]) => makeRock(x, z, sx, sy, sz || 3));
     }
 
+    const player = makePlayer();
     buildWorld();
+    const portal = makePortal(-14, 4);
+    const npc = makeNPC(-20, 4);
+    const chest1 = makeChest(20, -18, 1);
+    const chest2 = makeChest(22, 18, 2);
+    const chest3 = makeChest(-24, 20, 3);
 
-    function resize() {
-      W = window.innerWidth;
-      H = window.innerHeight;
-      canvas.width = W;
-      canvas.height = H;
-      mobileControls.style.display = isTouchDevice ? 'block' : 'none';
-    }
-    window.addEventListener('resize', resize);
-    resize();
+    const playerState = {
+      radius: 0.7,
+      height: 3.2,
+      velocityY: 0,
+      onGround: true,
+      heading: 0,
+      bob: 0
+    };
 
-    function clamp(value, min, max) {
-      return Math.max(min, Math.min(max, value));
-    }
-
-    function intersects(a, b) {
-      return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
-    }
-
-    function near(a, b, distance = 64) {
-      const ax = a.x + a.w / 2;
-      const ay = a.y + a.h / 2;
-      const bx = b.x + b.w / 2;
-      const by = b.y + b.h / 2;
-      return Math.hypot(ax - bx, ay - by) <= distance;
+    function updateQuest() {
+      questText.innerHTML = `<strong>Quête :</strong> ${state.message}<br><br><strong>Cristaux :</strong> ${state.crystalsFound}/3`;
     }
 
-    function updateQuestStatus() {
-      let text = `<strong>État de la quête :</strong><br>${state.message}`;
-      text += `<br><br><strong>Cristaux :</strong> ${state.crystalsFound}/3`;
-      if (portal.active) {
-        text += `<br><strong>Portail :</strong> réactivé`;
-      }
-      questStatusEl.innerHTML = text;
-    }
-
-    function renderInventory() {
+    function updateHotbar() {
       const items = [
         { key: 'crystal', icon: '◆', label: 'Cristal' },
         { key: 'wood', icon: '▤', label: 'Bois' },
         { key: 'food', icon: '✦', label: 'Food' }
       ];
-      inventoryEl.innerHTML = items.map(item => `
+      hotbar.innerHTML = items.map(item => `
         <div class="slot">
           <strong>${item.icon}</strong>
           <span>${item.label}</span>
-          <span class="count">${state.inventory[item.key] || 0}</span>
+          <span class="count">${state.inventory[item.key]}</span>
         </div>
       `).join('');
     }
 
-    function resetGame() {
-      player.x = 5 * TILE;
-      player.y = 8 * TILE;
-      player.dir = 'down';
-      state.questStarted = false;
-      state.crystalsFound = 0;
-      state.questCompleted = false;
-      state.message = 'Parle au villageois près du portail pour lancer ta mission.';
-      state.inventory = { crystal: 0, wood: 0, food: 0 };
-      portal.active = false;
-      chests.forEach(ch => ch.opened = false);
-      updateQuestStatus();
-      renderInventory();
-      winModal.classList.remove('show');
-      startModal.classList.add('show');
-      interactHintEl.style.display = 'none';
-      running = false;
+    function distance2D(a, b) {
+      const dx = a.x - b.x;
+      const dz = a.z - b.z;
+      return Math.hypot(dx, dz);
     }
 
-    function handleInteraction() {
-      if (near(player, npc, 76)) {
-        if (!state.questStarted) {
-          state.questStarted = true;
-          state.message = 'Eldon t’envoie chercher 3 cristaux cachés dans des coffres autour du monde.';
-        } else if (state.crystalsFound < 3) {
-          state.message = `Eldon : il manque encore ${3 - state.crystalsFound} cristal${3 - state.crystalsFound > 1 ? 'ux' : ''}. Continue l’exploration.`;
-        } else if (!portal.active) {
-          state.message = 'Eldon : parfait. Va au portail et active-le.';
-        }
-        updateQuestStatus();
+    function getNearbyInteraction() {
+      const p = player.position;
+      if (distance2D(p, { x: npc.x, z: npc.z }) < 4.2) return npc;
+      if (distance2D(p, { x: portal.x, z: portal.z }) < 5.2) return portal;
+      for (const ch of [chest1, chest2, chest3]) {
+        if (distance2D(p, { x: ch.x, z: ch.z }) < 3.6) return ch;
+      }
+      return null;
+    }
+
+    function showHint() {
+      const near = getNearbyInteraction();
+      if (!near) {
+        interactHint.style.display = 'none';
         return;
       }
+      let txt = '';
+      if (near.type === 'npc') txt = '<strong>E</strong> pour parler à Eldon';
+      if (near.type === 'portal') txt = '<strong>E</strong> pour activer le portail';
+      if (near.type === 'chest') txt = `<strong>E</strong> pour ouvrir le coffre ${near.id}`;
+      interactHint.innerHTML = txt;
+      interactHint.style.display = 'block';
+    }
 
-      for (const chest of chests) {
-        if (near(player, chest, 62)) {
-          if (!state.questStarted) {
-            state.message = 'Tu devrais d’abord parler à Eldon pour comprendre la mission.';
-            updateQuestStatus();
-            return;
-          }
-          if (!chest.opened) {
-            chest.opened = true;
-            if (chest.reward === 'crystal') {
-              state.crystalsFound += 1;
-              state.inventory.crystal += 1;
-            }
-            state.message = `Coffre ${chest.id} ouvert : tu as trouvé un cristal.`;
-            if (state.crystalsFound === 3) {
-              state.message += ' Retourne parler à Eldon puis active le portail.';
-            }
-          } else {
-            state.message = `Coffre ${chest.id} déjà ouvert.`;
-          }
-          updateQuestStatus();
-          renderInventory();
+    function openChest(chest) {
+      if (!state.questStarted) {
+        state.message = 'Parle d’abord à Eldon pour recevoir la mission.';
+        updateQuest();
+        return;
+      }
+      if (chest.opened) {
+        state.message = `Coffre ${chest.id} déjà ouvert.`;
+        updateQuest();
+        return;
+      }
+      chest.opened = true;
+      chest.group.children[1].rotation.x = -0.9;
+      const crystal = makeCrystalMesh();
+      crystal.position.set(chest.x, 2.6, chest.z);
+      scene.add(crystal);
+      crystals.push({ mesh: crystal, t: Math.random() * 2, life: 1.25 });
+      state.crystalsFound += 1;
+      state.inventory.crystal += 1;
+      state.message = `Tu as trouvé un cristal dans le coffre ${chest.id}.`;
+      if (state.crystalsFound === 3) {
+        state.message += ' Retourne vers le portail.';
+      }
+      updateQuest();
+      updateHotbar();
+    }
+
+    function interact() {
+      const near = getNearbyInteraction();
+      if (!near) return;
+      if (near.type === 'npc') {
+        if (!state.questStarted) {
+          state.questStarted = true;
+          state.message = 'Eldon a perdu 3 cristaux. Explore le monde, ouvre les coffres, puis active le portail.';
+        } else if (state.crystalsFound < 3) {
+          state.message = `Eldon : il manque encore ${3 - state.crystalsFound} cristal${3 - state.crystalsFound > 1 ? 'ux' : ''}.`;
+        } else {
+          state.message = 'Eldon : tout est prêt. Active le portail.';
+        }
+        updateQuest();
+        return;
+      }
+      if (near.type === 'chest') {
+        openChest(near);
+        return;
+      }
+      if (near.type === 'portal') {
+        if (state.crystalsFound < 3) {
+          state.message = 'Le portail manque encore d’énergie. Trouve les 3 cristaux.';
+          updateQuest();
           return;
         }
-      }
-
-      if (near(player, portal, 90)) {
-        if (state.crystalsFound >= 3) {
-          portal.active = true;
-          state.questCompleted = true;
-          state.message = 'Le portail est réactivé. Le village est sauvé.';
-          updateQuestStatus();
-          winModal.classList.add('show');
-          running = false;
-        } else {
-          state.message = 'Le portail manque d’énergie. Il te faut 3 cristaux.';
-          updateQuestStatus();
-        }
+        state.questCompleted = true;
+        state.message = 'Le portail est réactivé. Le village est sauvé.';
+        portal.core.material.color.set(0x7d5cff);
+        portal.core.material.emissive.set(0x40208b);
+        updateQuest();
+        state.running = false;
+        winModal.classList.add('show');
       }
     }
 
-    function blocked(nextRect) {
-      if (nextRect.x < TILE || nextRect.y < TILE || nextRect.x + nextRect.w > WORLD_W - TILE || nextRect.y + nextRect.h > WORLD_H - TILE) {
-        return true;
+    function collides(nextX, nextZ) {
+      const box = new THREE.Box3(
+        new THREE.Vector3(nextX - playerState.radius, 0, nextZ - playerState.radius),
+        new THREE.Vector3(nextX + playerState.radius, playerState.height, nextZ + playerState.radius)
+      );
+      for (const ob of obstacles) {
+        if (box.intersectsBox(ob)) return true;
       }
-
-      for (const wall of walls) {
-        if (intersects(nextRect, wall)) return true;
-      }
-
-      const npcRect = { x: npc.x, y: npc.y, w: npc.w, h: npc.h };
-      if (intersects(nextRect, npcRect)) return true;
-
+      if (nextX < -worldHalf + 1 || nextX > worldHalf - 1 || nextZ < -worldHalf + 1 || nextZ > worldHalf - 1) return true;
       return false;
     }
 
-    function updatePlayer() {
-      let dx = 0;
-      let dy = 0;
-      if (keys['arrowup'] || keys['z'] || keys['w']) dy -= player.speed;
-      if (keys['arrowdown'] || keys['s']) dy += player.speed;
-      if (keys['arrowleft'] || keys['q'] || keys['a']) dx -= player.speed;
-      if (keys['arrowright'] || keys['d']) dx += player.speed;
+    function handleMovement(dt) {
+      let moveX = 0;
+      let moveZ = 0;
+      if (input.up) moveZ -= 1;
+      if (input.down) moveZ += 1;
+      if (input.left) moveX -= 1;
+      if (input.right) moveX += 1;
 
-      if (isTouchDevice && joystickActive) {
-        dx += joystickVector.x * player.speed;
-        dy += joystickVector.y * player.speed;
+      if (isTouch && input.joyActive) {
+        moveX += input.joyX;
+        moveZ += input.joyY;
       }
 
-      if (dx !== 0 || dy !== 0) {
-        const length = Math.hypot(dx, dy) || 1;
-        dx = dx / length * player.speed;
-        dy = dy / length * player.speed;
+      const len = Math.hypot(moveX, moveZ);
+      const speed = 9;
+      if (len > 0.001) {
+        moveX /= len;
+        moveZ /= len;
 
-        if (Math.abs(dx) > Math.abs(dy)) player.dir = dx > 0 ? 'right' : 'left';
-        else player.dir = dy > 0 ? 'down' : 'up';
+        playerState.heading = Math.atan2(moveX, moveZ);
+        player.rotation.y = playerState.heading;
+
+        const nextX = player.position.x + moveX * speed * dt;
+        const nextZ = player.position.z + moveZ * speed * dt;
+
+        if (!collides(nextX, player.position.z)) player.position.x = nextX;
+        if (!collides(player.position.x, nextZ)) player.position.z = nextZ;
+
+        playerState.bob += dt * 12;
+        player.children[2].rotation.x = Math.sin(playerState.bob) * 0.55;
+        player.children[3].rotation.x = -Math.sin(playerState.bob) * 0.55;
+      } else {
+        player.children[2].rotation.x *= 0.78;
+        player.children[3].rotation.x *= 0.78;
       }
-
-      const nextXRect = { x: player.x + dx, y: player.y, w: player.w, h: player.h };
-      if (!blocked(nextXRect)) player.x += dx;
-
-      const nextYRect = { x: player.x, y: player.y + dy, w: player.w, h: player.h };
-      if (!blocked(nextYRect)) player.y += dy;
-
-      player.x = clamp(player.x, TILE, WORLD_W - TILE - player.w);
-      player.y = clamp(player.y, TILE, WORLD_H - TILE - player.h);
     }
 
-    function getCamera() {
-      const targetX = player.x + player.w / 2 - W / 2;
-      const targetY = player.y + player.h / 2 - H / 2;
-      return {
-        x: clamp(targetX, 0, Math.max(0, WORLD_W - W)),
-        y: clamp(targetY, 0, Math.max(0, WORLD_H - H))
-      };
+    function handleJump(dt) {
+      if (input.jump && playerState.onGround) {
+        playerState.velocityY = 9.2;
+        playerState.onGround = false;
+      }
+      playerState.velocityY -= 20 * dt;
+      player.position.y += playerState.velocityY * dt;
+      if (player.position.y <= 0) {
+        player.position.y = 0;
+        playerState.velocityY = 0;
+        playerState.onGround = true;
+      }
     }
 
-    function drawTileRect(x, y, w, h, color) {
-      ctx.fillStyle = color;
-      ctx.fillRect(x, y, w, h);
-      ctx.strokeStyle = 'rgba(0,0,0,0.12)';
-      ctx.strokeRect(x, y, w, h);
+    function updateCamera(dt) {
+      const dir = new THREE.Vector3(Math.sin(player.rotation.y), 0, Math.cos(player.rotation.y));
+      const desired = new THREE.Vector3(
+        player.position.x - dir.x * 8,
+        player.position.y + 6.8,
+        player.position.z - dir.z * 8
+      );
+      camera.position.lerp(desired, 1 - Math.pow(0.001, dt));
+      const look = new THREE.Vector3(player.position.x, player.position.y + 2.3, player.position.z);
+      camera.lookAt(look);
     }
 
-    function drawGround(cam) {
-      for (let row = 0; row < WORLD_ROWS; row++) {
-        for (let col = 0; col < WORLD_COLS; col++) {
-          const x = col * TILE - cam.x;
-          const y = row * TILE - cam.y;
-          ctx.fillStyle = (row + col) % 2 === 0 ? '#6fbe63' : '#68b75d';
-          ctx.fillRect(x, y, TILE, TILE);
-          ctx.fillStyle = '#9f7448';
-          ctx.fillRect(x, y + TILE - 8, TILE, 8);
-          ctx.strokeStyle = 'rgba(0,0,0,0.05)';
-          ctx.strokeRect(x, y, TILE, TILE);
+    function animateCrystals(dt) {
+      for (let i = crystals.length - 1; i >= 0; i--) {
+        const c = crystals[i];
+        c.t += dt * 4;
+        c.life -= dt;
+        c.mesh.rotation.y += dt * 4;
+        c.mesh.position.y += Math.sin(c.t) * 0.03;
+        if (c.life <= 0) {
+          scene.remove(c.mesh);
+          crystals.splice(i, 1);
         }
       }
     }
 
-    function drawWater(cam, zone) {
-      for (let r = 0; r < zone.rows; r++) {
-        for (let c = 0; c < zone.cols; c++) {
-          const x = zone.x + c * TILE - cam.x;
-          const y = zone.y + r * TILE - cam.y;
-          drawTileRect(x, y, TILE, TILE, '#49a6ff');
-          ctx.fillStyle = 'rgba(255,255,255,0.18)';
-          ctx.fillRect(x + 6, y + 8, TILE - 12, 6);
-        }
+    function animatePortal(dt) {
+      if (state.questCompleted) {
+        portal.core.rotation.y += dt * 0.6;
+        portal.core.material.emissiveIntensity = 0.8 + Math.sin(performance.now() * 0.008) * 0.2;
       }
     }
 
-    function drawTree(cam, x, y) {
-      const sx = x - cam.x;
-      const sy = y - cam.y;
-      ctx.fillStyle = '#7b4d25';
-      ctx.fillRect(sx + 18, sy + 22, 12, 22);
-      ctx.fillStyle = '#2f8f3f';
-      ctx.fillRect(sx + 6, sy + 4, 36, 24);
-      ctx.fillRect(sx + 10, sy, 28, 20);
-      ctx.fillStyle = 'rgba(255,255,255,0.08)';
-      ctx.fillRect(sx + 10, sy + 4, 10, 4);
-    }
-
-    function drawFlower(cam, x, y) {
-      const sx = x - cam.x;
-      const sy = y - cam.y;
-      ctx.fillStyle = '#2a8f3e';
-      ctx.fillRect(sx + 22, sy + 20, 4, 18);
-      ctx.fillStyle = '#ff5fa8';
-      ctx.fillRect(sx + 16, sy + 10, 16, 10);
-      ctx.fillStyle = '#ffd34f';
-      ctx.fillRect(sx + 20, sy + 12, 8, 6);
-    }
-
-    function drawWalls(cam) {
-      for (const wall of walls) {
-        const x = wall.x - cam.x;
-        const y = wall.y - cam.y;
-        ctx.fillStyle = '#9b9b9b';
-        ctx.fillRect(x, y, wall.w, wall.h);
-        ctx.fillStyle = '#b9b9b9';
-        ctx.fillRect(x, y, wall.w, 10);
-        ctx.fillStyle = '#6a6a6a';
-        ctx.fillRect(x, y + wall.h - 8, wall.w, 8);
-        ctx.strokeStyle = 'rgba(0,0,0,0.15)';
-        ctx.strokeRect(x, y, wall.w, wall.h);
+    function tick() {
+      const dt = Math.min(clock.getDelta(), 0.033);
+      if (state.running) {
+        handleMovement(dt);
+        handleJump(dt);
       }
+      updateCamera(dt);
+      animateCrystals(dt);
+      animatePortal(dt);
+      showHint();
+      renderer.render(scene, camera);
+      requestAnimationFrame(tick);
     }
 
-    function drawPortal(cam) {
-      const x = portal.x - cam.x;
-      const y = portal.y - cam.y;
-      ctx.fillStyle = '#5f3a1f';
-      ctx.fillRect(x, y, portal.w, portal.h);
-      ctx.clearRect(x + 12, y + 12, portal.w - 24, portal.h - 24);
-
-      if (portal.active) {
-        ctx.fillStyle = '#7d5cff';
-        ctx.fillRect(x + 12, y + 12, portal.w - 24, portal.h - 24);
-        ctx.fillStyle = 'rgba(255,255,255,0.25)';
-        ctx.fillRect(x + 18, y + 20, portal.w - 36, 10);
-      } else {
-        ctx.fillStyle = '#1d2231';
-        ctx.fillRect(x + 12, y + 12, portal.w - 24, portal.h - 24);
-      }
+    function resetGame() {
+      state.running = false;
+      state.questStarted = false;
+      state.crystalsFound = 0;
+      state.questCompleted = false;
+      state.message = 'Parle au villageois près du portail pour commencer.';
+      state.inventory = { crystal: 0, wood: 0, food: 0 };
+      player.position.set(-22, 0, 0);
+      player.rotation.y = 0;
+      playerState.velocityY = 0;
+      playerState.onGround = true;
+      playerState.heading = 0;
+      playerState.bob = 0;
+      [chest1, chest2, chest3].forEach(ch => {
+        ch.opened = false;
+        ch.group.children[1].rotation.x = 0;
+      });
+      portal.core.material.color.set(0x1d2231);
+      portal.core.material.emissive.set(0x000000);
+      winModal.classList.remove('show');
+      startModal.classList.add('show');
+      updateQuest();
+      updateHotbar();
     }
 
-    function drawChest(cam, chest) {
-      const x = chest.x - cam.x;
-      const y = chest.y - cam.y;
-      ctx.fillStyle = chest.opened ? '#8e6b46' : '#b78148';
-      ctx.fillRect(x, y, chest.w, chest.h);
-      ctx.fillStyle = '#5c3a1b';
-      ctx.fillRect(x, y + 12, chest.w, 4);
-      ctx.fillStyle = '#f4d35f';
-      ctx.fillRect(x + chest.w / 2 - 4, y + 10, 8, 8);
-      if (chest.opened) {
-        ctx.fillStyle = 'rgba(255,255,255,0.15)';
-        ctx.fillRect(x, y - 6, chest.w, 6);
-      }
-    }
-
-    function drawNPC(cam) {
-      const x = npc.x - cam.x;
-      const y = npc.y - cam.y;
-      ctx.fillStyle = '#68462b';
-      ctx.fillRect(x + 8, y + 26, 18, 12);
-      ctx.fillStyle = '#d6a77a';
-      ctx.fillRect(x + 6, y + 6, 22, 20);
-      ctx.fillStyle = '#4f7bff';
-      ctx.fillRect(x + 6, y + 26, 22, 10);
-      ctx.fillStyle = '#fff';
-      ctx.font = '12px Arial';
-      ctx.fillText(npc.name, x - 2, y - 8);
-    }
-
-    function drawPlayer(cam) {
-      const x = player.x - cam.x;
-      const y = player.y - cam.y;
-      ctx.fillStyle = '#5a3318';
-      ctx.fillRect(x + 8, y + 26, 14, 12);
-      ctx.fillStyle = '#f0c59a';
-      ctx.fillRect(x + 6, y + 4, 18, 18);
-      ctx.fillStyle = '#36b0ff';
-      ctx.fillRect(x + 4, y + 22, 22, 10);
-      ctx.fillStyle = '#1c3d7a';
-      ctx.fillRect(x + 4, y + 32, 22, 6);
-
-      ctx.fillStyle = '#222';
-      if (player.dir === 'left') {
-        ctx.fillRect(x + 8, y + 10, 2, 2);
-      } else if (player.dir === 'right') {
-        ctx.fillRect(x + 18, y + 10, 2, 2);
-      } else {
-        ctx.fillRect(x + 10, y + 10, 2, 2);
-        ctx.fillRect(x + 16, y + 10, 2, 2);
-      }
-    }
-
-    function drawShadow(cam, entity) {
-      const x = entity.x - cam.x;
-      const y = entity.y - cam.y;
-      ctx.fillStyle = 'rgba(0,0,0,0.18)';
-      ctx.fillRect(x + 4, y + entity.h - 4, entity.w - 8, 6);
-    }
-
-    function updateHint() {
-      let hint = '';
-      if (near(player, npc, 76)) {
-        hint = '<strong>E</strong> pour parler à Eldon';
-      } else {
-        const unopenedNearby = chests.find(ch => near(player, ch, 62));
-        if (unopenedNearby) {
-          hint = `<strong>E</strong> pour ouvrir le coffre ${unopenedNearby.id}`;
-        } else if (near(player, portal, 90)) {
-          hint = '<strong>E</strong> pour activer le portail';
-        }
-      }
-
-      if (hint) {
-        interactHintEl.innerHTML = hint;
-        interactHintEl.style.display = 'block';
-      } else {
-        interactHintEl.style.display = 'none';
-      }
-    }
-
-    function render() {
-      ctx.clearRect(0, 0, W, H);
-      const cam = getCamera();
-
-      drawGround(cam);
-
-      for (const deco of decorations) {
-        if (deco.type === 'water') drawWater(cam, deco);
-      }
-      for (const deco of decorations) {
-        if (deco.type === 'flower') drawFlower(cam, deco.x, deco.y);
-      }
-
-      drawPortal(cam);
-      drawWalls(cam);
-
-      for (const chest of chests) drawChest(cam, chest);
-      for (const deco of decorations) {
-        if (deco.type === 'tree') drawTree(cam, deco.x, deco.y);
-      }
-
-      drawShadow(cam, npc);
-      drawShadow(cam, player);
-      drawNPC(cam);
-      drawPlayer(cam);
-
-      updateHint();
-    }
-
-    function loop() {
-      if (running) updatePlayer();
-      render();
-      requestAnimationFrame(loop);
+    function setKey(code, value) {
+      if (code === 'ArrowUp' || code === 'KeyW' || code === 'KeyZ') input.up = value;
+      if (code === 'ArrowDown' || code === 'KeyS') input.down = value;
+      if (code === 'ArrowLeft' || code === 'KeyA' || code === 'KeyQ') input.left = value;
+      if (code === 'ArrowRight' || code === 'KeyD') input.right = value;
+      if (code === 'Space') input.jump = value;
     }
 
     window.addEventListener('keydown', (e) => {
-      keys[e.key.toLowerCase()] = true;
-      if (e.key.toLowerCase() === 'e' && running) {
-        handleInteraction();
-      }
+      setKey(e.code, true);
+      if (e.code === 'KeyE' && state.running) interact();
     });
 
     window.addEventListener('keyup', (e) => {
-      keys[e.key.toLowerCase()] = false;
+      setKey(e.code, false);
     });
 
     startBtn.addEventListener('click', () => {
       startModal.classList.remove('show');
-      running = true;
-      updateQuestStatus();
-      renderInventory();
+      state.running = true;
     });
 
     restartBtn.addEventListener('click', resetGame);
 
-    
-    function triggerAction(e) {
-      e.preventDefault();
-      if (running) handleInteraction();
-    }
-    btnAction.addEventListener('touchstart', triggerAction, { passive: false });
-    btnAction.addEventListener('click', triggerAction);
-
     function updateJoystick(clientX, clientY) {
       const rect = joystickBase.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
-      let dx = clientX - centerX;
-      let dy = clientY - centerY;
-      const maxDist = 34;
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      let dx = clientX - cx;
+      let dy = clientY - cy;
+      const max = 36;
       const dist = Math.hypot(dx, dy);
-      if (dist > maxDist) {
-        dx = (dx / dist) * maxDist;
-        dy = (dy / dist) * maxDist;
+      if (dist > max) {
+        dx = (dx / dist) * max;
+        dy = (dy / dist) * max;
       }
-      joystickVector.x = dx / maxDist;
-      joystickVector.y = dy / maxDist;
-      joystickKnob.style.left = `${34 + dx}px`;
-      joystickKnob.style.top = `${34 + dy}px`;
+      input.joyX = dx / max;
+      input.joyY = dy / max;
+      joystickKnob.style.left = `${36 + dx}px`;
+      joystickKnob.style.top = `${36 + dy}px`;
     }
 
     function resetJoystick() {
-      joystickActive = false;
-      joystickVector = { x: 0, y: 0 };
-      joystickKnob.style.left = '34px';
-      joystickKnob.style.top = '34px';
+      input.joyActive = false;
+      input.joyX = 0;
+      input.joyY = 0;
+      joystickKnob.style.left = '36px';
+      joystickKnob.style.top = '36px';
     }
 
     joystickBase.addEventListener('touchstart', (e) => {
       e.preventDefault();
-      joystickActive = true;
+      input.joyActive = true;
       const t = e.touches[0];
       updateJoystick(t.clientX, t.clientY);
     }, { passive: false });
 
     joystickBase.addEventListener('touchmove', (e) => {
       e.preventDefault();
-      if (!joystickActive) return;
+      if (!input.joyActive) return;
       const t = e.touches[0];
       updateJoystick(t.clientX, t.clientY);
     }, { passive: false });
@@ -934,22 +924,49 @@
 
     joystickBase.addEventListener('mousedown', (e) => {
       e.preventDefault();
-      joystickActive = true;
+      input.joyActive = true;
       updateJoystick(e.clientX, e.clientY);
     });
 
     window.addEventListener('mousemove', (e) => {
-      if (!joystickActive) return;
+      if (!input.joyActive) return;
       updateJoystick(e.clientX, e.clientY);
     });
 
     window.addEventListener('mouseup', () => {
-      if (joystickActive) resetJoystick();
+      if (input.joyActive) resetJoystick();
     });
 
-    updateQuestStatus();
-    renderInventory();
-    loop();
+    actionBtn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      if (state.running) interact();
+    }, { passive: false });
+    actionBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (state.running) interact();
+    });
+
+    jumpBtn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      input.jump = true;
+      setTimeout(() => input.jump = false, 120);
+    }, { passive: false });
+    jumpBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      input.jump = true;
+      setTimeout(() => input.jump = false, 120);
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    });
+
+    updateQuest();
+    updateHotbar();
+    tick();
   </script>
 </body>
 </html>
