@@ -212,6 +212,37 @@
 
     @media (max-width: 860px) {
       .hud { width: calc(100vw - 24px); left: 12px; top: 12px; }
+      .interactHint { right: 12px; top: auto; bottom: 160px; max-width: calc(100vw - 24px); }
+      .footerNote { left: 12px; right: 12px; bottom: 12px; }
+      .inventory { bottom: 138px; }
+    }
+
+    .mc-btn, .mc-action {
+      position: absolute;
+      width: 54px;
+      height: 54px;
+      border: none;
+      border-radius: 14px;
+      background: rgba(17,24,39,0.82);
+      color: #fff;
+      font-size: 24px;
+      font-weight: bold;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+      border: 2px solid rgba(255,255,255,0.14);
+      pointer-events: auto;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .mc-action {
+      position: relative;
+      width: 78px;
+      height: 78px;
+      border-radius: 50%;
+      font-size: 28px;
+      background: linear-gradient(135deg, #4d7dff, #3562e2);
+    }
       .interactHint { right: 12px; top: auto; bottom: 98px; max-width: calc(100vw - 24px); }
       .footerNote { left: 12px; right: 12px; bottom: 12px; }
       .inventory { bottom: 74px; }
@@ -256,6 +287,18 @@
     <div class="footerNote">
       Astuce : approche-toi d’un coffre, du villageois ou du portail puis appuie sur <strong>E</strong>.
     </div>
+
+    <div id="mobileControls" style="position:absolute; inset:0; pointer-events:none; z-index:12; display:none;">
+      <div style="position:absolute; left:14px; bottom:14px; width:170px; height:170px; pointer-events:none;">
+        <button class="mc-btn" id="btnUp" style="left:58px; top:0;">▲</button>
+        <button class="mc-btn" id="btnLeft" style="left:0; top:58px;">◀</button>
+        <button class="mc-btn" id="btnDown" style="left:58px; top:116px;">▼</button>
+        <button class="mc-btn" id="btnRight" style="left:116px; top:58px;">▶</button>
+      </div>
+      <div style="position:absolute; right:18px; bottom:24px; pointer-events:none;">
+        <button class="mc-action" id="btnAction">E</button>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -268,6 +311,12 @@
     const winModal = document.getElementById('winModal');
     const startBtn = document.getElementById('startBtn');
     const restartBtn = document.getElementById('restartBtn');
+    const mobileControls = document.getElementById('mobileControls');
+    const btnUp = document.getElementById('btnUp');
+    const btnDown = document.getElementById('btnDown');
+    const btnLeft = document.getElementById('btnLeft');
+    const btnRight = document.getElementById('btnRight');
+    const btnAction = document.getElementById('btnAction');
 
     let W = 0;
     let H = 0;
@@ -279,6 +328,7 @@
 
     let running = false;
     const keys = {};
+    const isTouchDevice = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
 
     const state = {
       questStarted: false,
@@ -377,6 +427,7 @@
       H = window.innerHeight;
       canvas.width = W;
       canvas.height = H;
+      mobileControls.style.display = isTouchDevice ? 'block' : 'none';
     }
     window.addEventListener('resize', resize);
     resize();
@@ -770,6 +821,35 @@
     });
 
     restartBtn.addEventListener('click', resetGame);
+
+    function bindHoldButton(button, keyName) {
+      const start = (e) => {
+        e.preventDefault();
+        keys[keyName] = true;
+      };
+      const end = (e) => {
+        e.preventDefault();
+        keys[keyName] = false;
+      };
+      button.addEventListener('touchstart', start, { passive: false });
+      button.addEventListener('touchend', end, { passive: false });
+      button.addEventListener('touchcancel', end, { passive: false });
+      button.addEventListener('mousedown', start);
+      button.addEventListener('mouseup', end);
+      button.addEventListener('mouseleave', end);
+    }
+
+    bindHoldButton(btnUp, 'arrowup');
+    bindHoldButton(btnDown, 'arrowdown');
+    bindHoldButton(btnLeft, 'arrowleft');
+    bindHoldButton(btnRight, 'arrowright');
+
+    function triggerAction(e) {
+      e.preventDefault();
+      if (running) handleInteraction();
+    }
+    btnAction.addEventListener('touchstart', triggerAction, { passive: false });
+    btnAction.addEventListener('click', triggerAction);
 
     updateQuestStatus();
     renderInventory();
